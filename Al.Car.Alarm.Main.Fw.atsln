@@ -1,0 +1,22 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Atmel Studio Solution File, Format Version 11.00
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Al.Car.Alarm.Main.Fw", "Al.Car.Alarm.Main.Fw\Al.Car.Alarm.Main.Fw.cproj", "{75565B60-4D24-4115-A079-FE2F69B1AC20}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{75565B60-4D24-4115-A079-FE2F69B1AC20}.Debug|AVR.ActiveCfg = Debug|AVR
+		{75565B60-4D24-4115-A079-FE2F69B1AC20}.Debug|AVR.Build.0 = Debug|AVR
+		{75565B60-4D24-4115-A079-FE2F69B1AC20}.Release|AVR.ActiveCfg = Release|AVR
+		{75565B60-4D24-4115-A079-FE2F69B1AC20}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
