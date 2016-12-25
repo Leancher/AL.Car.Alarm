@@ -9,9 +9,10 @@
 typedef enum
 {
 	ENGINE_STOP=1,
-	ENGINE_STARTING=2,
-	ENGINE_RUN=3,
-	ENGINE_STOPPING=4,
+	IGNITION_INIT=2,
+	ENGINE_STARTING=3,
+	ENGINE_RUN=4,
+	ENGINE_STOPPING=5,
 } DEVICE_STATE;
 
 DEVICE_STATE _current_state = ENGINE_STOP;
@@ -32,11 +33,18 @@ float get_input_voltage()
 
 void get_state_start_button()
 {
-	if (button_start_engine_is_pressed()==1) 
+	static int index=0;
+	index++;	
+	if (index>2)
 	{
-		if (_current_state==ENGINE_STOP) _current_state=ENGINE_STARTING;
-		if (_current_state==ENGINE_RUN) _current_state=ENGINE_STOPPING;
+		if (button_start_engine_is_pressed()==1)
+		{
+			if (_current_state==ENGINE_STOP) _current_state=IGNITION_INIT;
+			if (_current_state==ENGINE_RUN) _current_state=ENGINE_STOPPING;
+		}
+		index=0;	
 	}
+
 }
 
 void stop_engine()
@@ -48,23 +56,30 @@ void stop_engine()
 	indicator_set_state(1);
 }
 
-void start_engine()
+void ignition_turn_on()
 {
 	static int index = 0;
-	indicator_set_state(0);
-
 	relay_ignition_set_state(1);
-	while (index<20)
-	{
-		index++;
-		_delay_ms(100);
-	}
+	index++;
+	if (index<20) return;
 	index=0;
+	_current_state=ENGINE_STARTING;
+}
+
+void start_engine()
+{
+	static int _conter_try = 0;
+	static int index = 0;
 	relay_starter_set_state(1);
-	while (get_input_voltage()<13.3)
+	if (index>20)
 	{
-		_delay_ms(50);
+		relay_starter_set_state(0);
+		_current_state=ENGINE_STOPPING;
+		index=0;
+		return;	
 	}
+	index++;
+	if (get_input_voltage()<13.3) return;	
 	relay_starter_set_state(0);
 	_current_state=ENGINE_RUN;
 	indicator_set_state(1);
@@ -78,12 +93,7 @@ int main(void)
 	uart_init_withdivider(0,UBRR_VALUE);
 	uart_send_string(0,DEV_NAME);
 	uart_send_string(0,"\r\n");
-	uart_send_float(0,get_input_voltage(),2);
-	uart_send_string(0,"\r\n");
-	_delay_ms(1000);
-
 	indicator_set_state(1);
-
 	device_init();
 
     while (1) 
@@ -91,6 +101,7 @@ int main(void)
 		uart_send_float(0,get_input_voltage(),2);
 		uart_send_string(0,"\r\n");
 		get_state_start_button();
+		if (_current_state==IGNITION_INIT) ignition_turn_on();
 		if (_current_state==ENGINE_STARTING) start_engine();
 		if (_current_state==ENGINE_STOPPING) stop_engine();
  		_delay_ms(100);
