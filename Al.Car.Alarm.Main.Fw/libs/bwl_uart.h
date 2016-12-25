@@ -10,6 +10,7 @@
 #ifndef BWL_UART_H_
 #define BWL_UART_H_
 
+
 void uart_init_withdivider_x2(unsigned char port, unsigned int ubrr);
 void uart_init_withdivider(unsigned char port,unsigned int ubrr);
 void uart_send(const unsigned char port, const unsigned char byte );

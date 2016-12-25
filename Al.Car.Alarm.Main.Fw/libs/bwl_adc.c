@@ -26,13 +26,6 @@ unsigned int adc_read_once (void){
 	return data;
 }
 
-void adc_init_mux5 (unsigned char mux, unsigned char adjust, unsigned char refs, unsigned char prescaler){
-	
-	ADCSRA = (1 << ADEN)|(prescaler << ADPS0);
-	ADMUX  = (refs << REFS0)|(adjust << ADLAR)|(mux << MUX0);
-	adc_read_once();
-}
-
 void adc_init (unsigned char mux, unsigned char adjust, unsigned char refs, unsigned char prescaler){
 	
 	ADCSRA = (1 << ADEN)|(prescaler << ADPS0);
