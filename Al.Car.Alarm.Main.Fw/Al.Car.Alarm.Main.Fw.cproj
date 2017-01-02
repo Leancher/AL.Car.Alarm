@@ -140,6 +140,12 @@
     <Compile Include="board\board.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="libs\bwl_simplserial.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="libs\bwl_simplserial.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
@@ -159,12 +165,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="libs\bwl_strings.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="libs\bwl_tools.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="libs\bwl_tools.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

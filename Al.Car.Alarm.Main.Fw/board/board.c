@@ -30,6 +30,13 @@ void indicator_set_state(byte state)
 	setbit(PORTB,5,state);
 }
 
+//0 - on, 1 - off
+void gsm_relay_set_state(byte state)
+{
+	setbit(DDRC,7,1);
+	setbit(PORTC,7,state);
+}
+
 void var_delay_ms(int ms)
 {
 	for (int i=0; i<ms; i++)_delay_ms(1.0);
