@@ -2,6 +2,8 @@
 
 #include "board/board.h"
 
+#include <avr/wdt.h>
+
 //#METHODS
 #define DEV_NAME "Car alarm 1.0"
 #define ADC_VOLT_MULTIPLIER_MV		(68+2.2)/2.2 * 1.1
@@ -21,12 +23,16 @@ typedef enum
 DEVICE_STATE _current_state = ENGINE_STOP;
 
 uint16_t voltage_battery=0;
+int during_work=0;
+byte start_engine_by_sms=0;
+byte bluetooth_label_presence=0;
 
 void device_init()
 {
 	button_start_engine_enable();
 	relay_ignition_set_state(0);
 	relay_starter_set_state(0);
+	bluetooth_data_in_enable();
 }
 
 void get_input_voltage()
@@ -34,6 +40,13 @@ void get_input_voltage()
 	adc_init(0, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
 	//uint16_t val=adc_read_once()
 	voltage_battery = adc_read_once()*ADC_VOLT_MULTIPLIER_MV;
+}
+
+void select_current_state()
+{
+	if (_current_state==IGNITION_INIT) _current_state=ENGINE_STOPPING;
+	if (_current_state==ENGINE_STOP) _current_state=IGNITION_INIT;
+	if (_current_state==ENGINE_RUN) _current_state=ENGINE_STOPPING;
 }
 
 void get_state_start_button()
@@ -44,15 +57,12 @@ void get_state_start_button()
 	{
 		if (button_start_engine_is_pressed()==1)
 		{
-			if (_current_state==IGNITION_INIT) _current_state=ENGINE_STOPPING;
-			if (_current_state==ENGINE_STOP) _current_state=IGNITION_INIT;
-			if (_current_state==ENGINE_RUN) _current_state=ENGINE_STOPPING;
+			select_current_state();
+
 		}
 		index=0;	
 	}
 }
-
-
 
 void stop_engine()
 {
@@ -73,9 +83,12 @@ void ignition_turn_on()
 	_current_state=ENGINE_STARTING;
 }
 
-void send_result()
+
+//30 - успешный запуск
+//31 - двишатель не смог запуститься
+void send_sms(int number_command)
 {
-	sserial_request.command=14;
+	sserial_request.command=number_command;
 	sserial_request.datalength=0;
 	volatile char result=sserial_send_request_wait_response(UART_485, 100);
 	if (result==0)
@@ -99,6 +112,8 @@ void start_engine()
 		relay_starter_set_state(0);
 		_current_state=ENGINE_STOPPING;
 		index=0;
+		start_engine_by_sms=0;
+		send_sms(31);
 		return;	
 	}
 	index++;
@@ -106,36 +121,39 @@ void start_engine()
 	relay_starter_set_state(0);
 	_current_state=ENGINE_RUN;
 	indicator_set_state(1);
-	send_result();
+	if (start_engine_by_sms==1) send_sms(30);
+	start_engine_by_sms=0;
 }
 
 void sserial_process_request(unsigned char portindex)
 {
 	//Напряжение батареи
-	if (sserial_request.command==11)
+	if (sserial_request.command==4)
 	{
 		sserial_response.result=128+sserial_request.command;
-		//voltage_battery=1234;
 		sserial_response.data[0]=voltage_battery/100;
 		sserial_response.datalength=1;
 		sserial_send_response();
 	}
 	//Запустить двигатель
-	if (sserial_request.command==12)
+	if (sserial_request.command==10)
 	{
 		sserial_response.result=128+sserial_request.command;
+		if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];
+		
 		if (_current_state==ENGINE_RUN) sserial_response.data[0]=ENGINE_RUN;
 		if (_current_state==IGNITION_INIT) sserial_response.data[0]=ENGINE_RUN;
 		if (_current_state==ENGINE_STOP)
 		{
 			_current_state=IGNITION_INIT;
 			sserial_response.data[0]=ENGINE_STARTING;
+			start_engine_by_sms=1;
 		}
 		sserial_response.datalength=1;
 		sserial_send_response();
 	}
 	//Остановить двигатель
-	if (sserial_request.command==13)
+	if (sserial_request.command==5)
 	{
 		sserial_response.result=128+sserial_request.command;
 		_current_state=ENGINE_STOPPING;
@@ -143,7 +161,7 @@ void sserial_process_request(unsigned char portindex)
 		sserial_response.datalength=1;
 		sserial_send_response();
 	}
-	if (sserial_request.command==19)
+	if (sserial_request.command==8)
 	{
 		sserial_response.result=128+sserial_request.command;
 		if (sserial_request.data[0]<255)	indicator_set_state(sserial_request.data[0]);
@@ -151,7 +169,7 @@ void sserial_process_request(unsigned char portindex)
 		sserial_response.datalength=1;
 		sserial_send_response();
 	}
-	if (sserial_request.command==20)
+	if (sserial_request.command==9)
 	{
 		sserial_response.result=128+sserial_request.command;
 		if (sserial_request.data[0]<255)	indicator_set_state(sserial_request.data[0]);
@@ -171,7 +189,7 @@ void led_on()
 	if (result==0)
 	{
 		string_clear();
-		string_add_string("PowerBoard not respond");
+		string_add_string("Board not respond");
 	}else
 	{
 		string_add_string("LED on");
@@ -189,7 +207,7 @@ void led_off()
 	if (result==0)
 	{
 		string_clear();
-		string_add_string("PowerBoard not respond");
+		string_add_string("Board not respond");
 	}
 	else
 	{
@@ -198,7 +216,7 @@ void led_off()
 	}
 }
 
-void get_button_state()
+void switch_led()
 {
 	static int current_state=0;
 	static int index=0;
@@ -223,8 +241,41 @@ void get_button_state()
 	
 }
 
+void get_bluetooth_data()
+{
+	static int counter=0;
+	static byte current_state_label=0;
+	current_state_label=bluetooth_data_in();
+
+	if (current_state_label != bluetooth_label_presence)
+	{
+		counter++;
+		if (counter>100) 
+		{
+			bluetooth_label_presence=current_state_label;
+			counter=0;
+		}
+	}
+}
+
+void check_during_work()
+{
+	static int counter_ms=0;
+	if (during_work>0)
+	{
+		counter_ms++;
+		if (counter_ms>1000)
+		{
+			during_work--;
+			counter_ms=0;
+		}
+	}
+	if (during_work==0) _current_state=ENGINE_STOPPING;
+}
+
 int main(void)
 {
+	wdt_enable(WDTO_8S);
 	uart_init_withdivider(UART_USB,UBRR_VALUE);
 	uart_init_withdivider(UART_485,UBRR_VALUE);
 	indicator_set_state(1);
@@ -234,15 +285,22 @@ int main(void)
     while (1) 
     {
 		wdt_reset();
-		//get_button_state();
 		get_input_voltage();
+		//get_bluetooth_data();
+		//indicator_set_state(bluetooth_label_presence);
 // 		uart_send_float(UART_USB,voltage_battery/1000,2);
 // 		uart_send_string(UART_USB,"\r\n");
- 		get_state_start_button();
+//	 	if (bluetooth_label_presence==1) get_state_start_button();
+//		switch_led();
 		if (_current_state==IGNITION_INIT) ignition_turn_on();
 		if (_current_state==ENGINE_STARTING) start_engine();
 		if (_current_state==ENGINE_STOPPING) stop_engine();
-		sserial_poll_uart(UART_485);
+		
+		if (_current_state==ENGINE_RUN)
+		{
+			if (start_engine_by_sms==1) check_during_work();
+		}
+ 		sserial_poll_uart(UART_485);
 		_delay_ms(1);
 
     }

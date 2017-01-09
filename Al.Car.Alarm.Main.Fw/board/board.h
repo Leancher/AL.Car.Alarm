@@ -36,4 +36,7 @@ void indicator_set_state(byte state);
 
 void gsm_relay_set_state(byte state);
 
+void bluetooth_data_in_enable();
+byte bluetooth_data_in();
+
 #endif

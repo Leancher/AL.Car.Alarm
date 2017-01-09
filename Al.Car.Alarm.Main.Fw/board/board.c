@@ -37,6 +37,18 @@ void gsm_relay_set_state(byte state)
 	setbit(PORTC,7,state);
 }
 
+void bluetooth_data_in_enable()
+{
+	setbit(DDRD,4,0);
+	setbit(PORTD,4,1);	
+}
+
+byte bluetooth_data_in()
+{
+	if (getbit(PIND,4)) {return 0;}
+	return 1;	
+}
+
 void var_delay_ms(int ms)
 {
 	for (int i=0; i<ms; i++)_delay_ms(1.0);
