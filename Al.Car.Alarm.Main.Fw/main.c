@@ -299,13 +299,20 @@ void get_bluetooth_data()
 void check_during_work()
 {
 	static int counter_ms=0;
+	static int counter_sec=0;
+
 	if (during_work>0)
 	{
 		counter_ms++;
 		if (counter_ms>1000)
 		{
-			during_work--;
+			counter_sec++;
 			counter_ms=0;
+		}
+		if (counter_sec>60)
+		{
+			during_work--;
+			counter_sec=0;
 		}
 	}
 	if (during_work==0) 
@@ -329,11 +336,12 @@ int main(void)
     {
 		wdt_reset();
 		get_input_voltage();
-		//get_bluetooth_data();
-		//indicator_set_state(bluetooth_label_presence);
+		get_bluetooth_data();
+		indicator_set_state(bluetooth_label_presence);
+		if (bluetooth_label_presence==1) get_state_start_button();
 // 		uart_send_float(UART_USB,voltage_battery/1000,2);
 // 		uart_send_string(UART_USB,"\r\n");
-//	 	if (bluetooth_label_presence==1) get_state_start_button();
+	 	
 //		switch_led();
 		if (_current_state==IGNITION_INIT) ignition_turn_on();
 		if (_current_state==ENGINE_STARTING) start_engine();
