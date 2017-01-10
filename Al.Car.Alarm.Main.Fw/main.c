@@ -7,9 +7,10 @@
 //#METHODS
 #define DEV_NAME "Car alarm 1.0"
 #define ADC_VOLT_MULTIPLIER_MV		(68+2.2)/2.2 * 1.1
-#define DELAY_IGNITION_INIT 3000 //3000 ms / 50 cycles
-#define DURING_STARTER_WORK 2000 //2000 ms / 50 cycles
-#define VOLTAGE_RUNNING_ENGINE 12500
+#define DELAY_IGNITION_INIT 3000 //3000 ms
+#define DURING_STARTER_WORK 2000 //2000 ms
+#define DELAY_BEFOR_NEXT_START 5000
+#define VOLTAGE_RUNNING_ENGINE 11600//12500 в машине
 
 
 typedef enum
@@ -24,6 +25,7 @@ DEVICE_STATE _current_state = ENGINE_STOP;
 
 uint16_t voltage_battery=0;
 int during_work=0;
+//1 - если двигатель запущен с помощью СМС
 byte start_engine_by_sms=0;
 byte bluetooth_label_presence=0;
 
@@ -64,28 +66,9 @@ void get_state_start_button()
 	}
 }
 
-void stop_engine()
-{
-	relay_ignition_set_state(0);
-	indicator_set_state(0);
-	_current_state=ENGINE_STOP;
-	_delay_ms(5000);
-	indicator_set_state(1);
-}
-
-void ignition_turn_on()
-{
-	static int index = 0;
-	relay_ignition_set_state(1);
-	index++;
-	if (index<DELAY_IGNITION_INIT) return;
-	index=0;
-	_current_state=ENGINE_STARTING;
-}
-
-
 //30 - успешный запуск
-//31 - двишатель не смог запуститься
+//31 - двигатель не смог запуститься
+//32 - двигатель остановлен
 void send_sms(int number_command)
 {
 	sserial_request.command=number_command;
@@ -101,6 +84,29 @@ void send_sms(int number_command)
 	}
 }
 
+void stop_engine()
+{
+	relay_ignition_set_state(0);
+	indicator_set_state(0);
+	if (start_engine_by_sms==1 ) send_sms(32);
+	start_engine_by_sms=0;
+	_current_state=ENGINE_STOP;
+	_delay_ms(5000);
+	indicator_set_state(1);
+}
+//Включить зажигание
+void ignition_turn_on()
+{
+	static int index = 0;
+	relay_ignition_set_state(1);
+	index++;
+	//Подождать, пока машина подготовиться к запуску
+	if (index<DELAY_IGNITION_INIT) return;
+	index=0;
+	//Перевести в состояние Запуск двигателя
+	_current_state=ENGINE_STARTING;
+}
+
 void start_engine()
 {
 	//static int _conter_try = 0;
@@ -112,8 +118,8 @@ void start_engine()
 		relay_starter_set_state(0);
 		_current_state=ENGINE_STOPPING;
 		index=0;
+		if (start_engine_by_sms==1 ) send_sms(31);
 		start_engine_by_sms=0;
-		send_sms(31);
 		return;	
 	}
 	index++;
@@ -122,7 +128,24 @@ void start_engine()
 	_current_state=ENGINE_RUN;
 	indicator_set_state(1);
 	if (start_engine_by_sms==1) send_sms(30);
-	start_engine_by_sms=0;
+	
+}
+
+//Обработка запроса на запуск двигателя
+void process_start_engine_by_sms()
+{
+	if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];
+	
+	if (_current_state==ENGINE_RUN) sserial_response.data[0]=ENGINE_RUN;
+	if (_current_state==IGNITION_INIT) sserial_response.data[0]=ENGINE_RUN;
+	if (_current_state==ENGINE_STOP)
+	{
+		_current_state=IGNITION_INIT;
+		sserial_response.data[0]=ENGINE_STARTING;
+		start_engine_by_sms=1;
+	}
+	sserial_response.datalength=1;
+	sserial_send_response();
 }
 
 void sserial_process_request(unsigned char portindex)
@@ -131,27 +154,12 @@ void sserial_process_request(unsigned char portindex)
 	if (sserial_request.command==4)
 	{
 		sserial_response.result=128+sserial_request.command;
+		//Данные с АЦП состоят из пяти символов. Переслать можно только три символа, делим на 100
 		sserial_response.data[0]=voltage_battery/100;
 		sserial_response.datalength=1;
 		sserial_send_response();
 	}
-	//Запустить двигатель
-	if (sserial_request.command==10)
-	{
-		sserial_response.result=128+sserial_request.command;
-		if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];
-		
-		if (_current_state==ENGINE_RUN) sserial_response.data[0]=ENGINE_RUN;
-		if (_current_state==IGNITION_INIT) sserial_response.data[0]=ENGINE_RUN;
-		if (_current_state==ENGINE_STOP)
-		{
-			_current_state=IGNITION_INIT;
-			sserial_response.data[0]=ENGINE_STARTING;
-			start_engine_by_sms=1;
-		}
-		sserial_response.datalength=1;
-		sserial_send_response();
-	}
+
 	//Остановить двигатель
 	if (sserial_request.command==5)
 	{
@@ -176,6 +184,36 @@ void sserial_process_request(unsigned char portindex)
 		sserial_response.data[0]=1;	
 		sserial_response.datalength=1;
 		sserial_send_response();
+	}
+	//Запустить двигатель на 10
+	if (sserial_request.command==10)
+	{
+		sserial_response.result=128+sserial_request.command;
+		process_start_engine_by_sms();
+	}
+	//Запустить двигатель на 15
+	if (sserial_request.command==15)
+	{
+		sserial_response.result=128+sserial_request.command;
+		process_start_engine_by_sms();
+	}
+	//Запустить двигатель на 20
+	if (sserial_request.command==20)
+	{
+		sserial_response.result=128+sserial_request.command;
+		process_start_engine_by_sms();
+	}
+	//Запустить двигатель на 25
+	if (sserial_request.command==25)
+	{
+		sserial_response.result=128+sserial_request.command;
+		process_start_engine_by_sms();
+	}
+	//Запустить двигатель на 30
+	if (sserial_request.command==30)
+	{
+		sserial_response.result=128+sserial_request.command;
+		process_start_engine_by_sms();
 	}
 }
 
@@ -270,7 +308,12 @@ void check_during_work()
 			counter_ms=0;
 		}
 	}
-	if (during_work==0) _current_state=ENGINE_STOPPING;
+	if (during_work==0) 
+	{
+		_current_state=ENGINE_STOPPING;
+		start_engine_by_sms=0;
+		send_sms(32);
+	}
 }
 
 int main(void)
