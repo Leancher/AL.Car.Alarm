@@ -1,5 +1,15 @@
 #include "board.h"
 
+void adc_init_voltage_input()
+{
+	adc_init(0, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
+}
+
+void adc_init_voltage_acc()
+{
+	adc_init(2, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
+}
+
 void relay_starter_set_state(byte state)
 {
 	setbit(DDRA,4,1);

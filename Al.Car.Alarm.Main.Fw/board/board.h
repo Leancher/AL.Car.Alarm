@@ -28,6 +28,9 @@
 typedef unsigned char byte;
 void var_delay_ms(int ms);
 
+void adc_init_voltage_input();
+void adc_init_voltage_acc();
+
 void relay_starter_set_state(byte state);
 void relay_ignition_set_state(byte state);
 void button_start_engine_enable();
