@@ -2,7 +2,7 @@
 
 void adc_init_voltage_input()
 {
-	adc_init(0, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
+	adc_init(1, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
 }
 
 void adc_init_voltage_acc()
