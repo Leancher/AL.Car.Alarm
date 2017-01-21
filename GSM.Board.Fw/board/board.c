@@ -145,17 +145,6 @@ void set_unused_pin()
 	setbit(PORTL,7,1);
 }
 
-void ir_led_set(char state)
-{
-	setbit(DDRC,3,1);
-	setbit(PORTC,3,state);
-}
-
-void ir_modulation_delay()
-{
-	_delay_us(10.5);
-}
-
 void board_led_set (byte state)
 {
 	setbit(DDRC,5,1);
@@ -215,9 +204,4 @@ void watchdog_power_on()
 	_delay_ms(300);
 	setbit(PORTB,7,0);
 	wdt_reset();
-}
-
-void board_init()
-{
-
 }

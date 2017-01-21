@@ -12,8 +12,7 @@
 byte		gsm_present;
 byte		gsm_connected;
 
-//вызывать
-void		gsm_update();			
+//вызывать			
 void		sserial_process_gsm();	//из основного sserial_process
 
 //должны быть определены

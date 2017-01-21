@@ -8,12 +8,6 @@
 #define UART_GSM 2
 #define UART_GPS 3
 
-#define ALARM_CH1_LEVEL 2.8
-#define ALARM_CH2_LEVEL 4.8
-#define ALARM_CH3_LEVEL 10.1
-#define ALARM_CH4_LEVEL 4.7
-#define ALARM_CH5_LEVEL 7.5
-
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/wdt.h>

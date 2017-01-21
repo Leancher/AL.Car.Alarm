@@ -4,7 +4,6 @@
 #define DEFAULT_PHONE_2 "+79210522030"
 #define COUNT_REQUEST_TRY 3
 
-
 #include "board/board.h"
 #include "refs-avr/bwl_uart.h"
 #include "refs-avr/bwl_simplserial.h"
@@ -108,7 +107,6 @@ void led_off()
 		board_led_set(1);
 	}
 }
-
 //Тест
 void switch_led()
 {
@@ -134,45 +132,6 @@ void switch_led()
 	}
 }
 
-void get_battery_voltage()
-{
-	for (int counter=1; counter<COUNT_REQUEST_TRY; counter++)
-	{
-		wdt_reset();
-		sserial_request.command=4;
-		sserial_request.datalength=0;
-		volatile char result=sserial_send_request_wait_response(UART_485, 300);
-		string_clear();
-		if (result!=0)
-		{
-			string_clear();
-			float val = sserial_response.data[0];
-			val /= 10;
-			string_add_string("Battery voltage: ");
-			string_add_float(val,1);
-			string_add_string("V");
-			return;
-		}
-	}
-	string_add_string("Board not respond");
-}
-
-//Тест
-void recive_voltage()
-{
-	static int index=0;
-	index++;
-	if (index>200)
-	{
-		if (board_button_get()==1)
-		{
-			get_battery_voltage();
-			gsm_send_sms(gsm_received_sms_phone,string_buffer);
-		}
-		index=0;
-	}
-}
-
 //ENGINE_STOP=1,
 //IGNITION_INIT=2,
 //ENGINE_STARTING=3,
@@ -186,7 +145,7 @@ void engine_start(int count_minutes)
 		sserial_request.command=10;
 		sserial_request.data[0]=count_minutes;
 		sserial_request.datalength=1;
-		volatile char result=sserial_send_request_wait_response(UART_485, 300);
+		volatile char result=sserial_send_request_wait_response(UART_485, 100);
 		string_clear();
 		if (result != 0)
 		{
@@ -194,13 +153,14 @@ void engine_start(int count_minutes)
 			if (sserial_response.data[0]==3) string_add_string("Engine starting");
 			return;
 		}
+		_delay_ms(10);
 	}
 	string_add_string("Board not respond");
 }
 
 void engine_stop()
 {
-	//Пытаемся отправить несколько раз
+	//Пытаемся отправить несколько раз на случай пропуска приема
 	for (int counter=1; counter<COUNT_REQUEST_TRY; counter++)
 	{
 		wdt_reset();
@@ -213,6 +173,31 @@ void engine_stop()
 			string_add_string("Engine stop");
 			return;
 		}
+		_delay_ms(10);
+	}
+	string_add_string("Board not respond");
+}
+
+void get_battery_voltage()
+{
+	for (int counter=1; counter<COUNT_REQUEST_TRY; counter++)
+	{
+		wdt_reset();
+		sserial_request.command=4;
+		sserial_request.datalength=0;
+		volatile char result=sserial_send_request_wait_response(UART_485, 100);
+		string_clear();
+		if (result!=0)
+		{
+			string_clear();
+			float val = sserial_response.data[0];
+			val /= 10;
+			string_add_string("Battery voltage: ");
+			string_add_float(val,1);
+			string_add_string("V");
+			return;
+		}
+		_delay_ms(10);
 	}
 	string_add_string("Board not respond");
 }
@@ -357,10 +342,24 @@ void sserial_process_request(unsigned char portindex)
 		sserial_send_response();
 	}
 }
+//Тест
+void recive_voltage()
+{
+	static int index=0;
+	index++;
+	if (index>200)
+	{
+		if (board_button_get()==1)
+		{
+			get_battery_voltage();
+			gsm_send_sms(gsm_received_sms_phone,string_buffer);
+		}
+		index=0;
+	}
+}
 
 void device_init()
 {
-	set_unused_pin();
 	board_button_enable();
 }
 

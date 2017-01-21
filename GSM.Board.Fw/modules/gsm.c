@@ -26,8 +26,3 @@ void sserial_process_gsm()
 		sserial_send_response();
 	}
 }
-
-void gsm_update()
-{
-	
-}
