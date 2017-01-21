@@ -1,5 +1,53 @@
 #include "board.h"
 
+void set_unused_pin()
+{
+	setbit(DDRA,0,0);
+	setbit(PORTA,0,1);
+	setbit(DDRA,5,0);
+	setbit(PORTA,5,1);
+	setbit(DDRA,6,0);
+	setbit(PORTA,6,1);
+	setbit(DDRA,7,0);
+	setbit(PORTA,7,1);
+	
+	setbit(DDRB,0,0);
+	setbit(PORTB,0,1);
+	setbit(DDRB,1,0);
+	setbit(PORTB,1,1);
+	setbit(DDRB,2,0);
+	setbit(PORTB,2,1);
+	setbit(DDRB,3,0);
+	setbit(PORTB,3,1);
+	setbit(DDRB,4,0);
+	setbit(PORTB,4,1);
+	setbit(DDRB,5,1);
+	setbit(PORTB,5,0);
+	setbit(DDRB,6,1);
+	setbit(PORTB,6,0);
+	setbit(DDRB,7,1);
+	setbit(PORTB,7,0);
+	
+	setbit(DDRC,0,0);
+	setbit(DDRC,1,0);
+	setbit(DDRC,6,0);
+	setbit(DDRC,7,0);
+
+	setbit(PORTC,0,1);
+	setbit(PORTC,1,1);
+	setbit(PORTC,6,1);
+	setbit(PORTC,7,1);
+
+	setbit(DDRD,4,0);
+	setbit(PORTD,4,1);
+	setbit(DDRD,5,0);
+	setbit(PORTD,5,1);
+	setbit(DDRD,6,1);
+	setbit(PORTD,6,0);
+	setbit(DDRD,7,1);
+	setbit(PORTD,7,0);
+}
+
 void adc_init_voltage_input()
 {
 	adc_init(1, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);

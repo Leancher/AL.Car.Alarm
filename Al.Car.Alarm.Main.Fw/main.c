@@ -34,10 +34,11 @@ byte bluetooth_label_presence=0;
 
 void device_init()
 {
+	set_unused_pin();
 	button_start_engine_enable();
 	relay_ignition_set_state(0);
 	relay_starter_set_state(0);
-	bluetooth_data_in_enable();
+	//bluetooth_data_in_enable();
 }
 
 int get_acc_voltage()
@@ -170,9 +171,7 @@ void start_engine()
 //Обработка запроса на запуск двигателя
 void process_start_engine_by_sms()
 {
-	if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];
-	during_work=2;
-	
+	if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];	
 	if (current_state==ENGINE_RUN) sserial_response.data[0]=ENGINE_RUN;
 	if (current_state==IGNITION_INIT) sserial_response.data[0]=ENGINE_RUN;
 	if (current_state==ENGINE_STOP)
@@ -389,7 +388,7 @@ int main(void)
 	wdt_enable(WDTO_4S);
 	uart_init_withdivider(UART_USB,UBRR_VALUE);
 	uart_init_withdivider(UART_485,UBRR_VALUE);
-	indicator_set_state(1);
+	//indicator_set_state(1);
 
 	device_init();
 
@@ -397,7 +396,7 @@ int main(void)
     {
 		wdt_reset();
 		
-		get_bluetooth_data();
+//		get_bluetooth_data();
 //		indicator_set_state(bluetooth_label_presence);
 //		if (bluetooth_label_presence==1) get_state_start_button();
 // 		uart_send_float(UART_USB,voltage_battery/1000,2);

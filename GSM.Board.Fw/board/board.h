@@ -24,7 +24,7 @@
 #define setbit(port,bit,val)	{if ((val)) {(port)|= (1 << (bit));} else {(port) &= ~(1 << (bit));}}
 
 typedef unsigned char byte;
-
+void set_unused_pin();
 void board_led_set (byte _state);
 void board_button_enable();
 byte board_button_get();
