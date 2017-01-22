@@ -6,7 +6,7 @@
 
 //#METHODS
 #define DEV_NAME "Car alarm 1.0"
-#define ADC_VOLT_MULTIPLIER_MV		(68+2.2)/2.2 * 1.1
+#define ADC_VOLT_MULTIPLIER_MV		(68+2.2)/2.2 * 1.1 //35.1
 #define DELAY_IGNITION_INIT 3000 //3000 ms
 #define DURING_STARTER_WORK 2000 //2000 ms
 #define DELAY_BEFOR_NEXT_START 5000
@@ -60,7 +60,7 @@ int get_acc_voltage()
 int get_voltage_battery()
 {
 	uint16_t val=0;
-	val=adc_read_average(10);
+	val=adc_read_average(3);
 	val=val*ADC_VOLT_MULTIPLIER_MV;
 	return val;
 }
@@ -383,6 +383,19 @@ void count_during_work()
 	}
 }
 
+void check_current_state()
+{
+	adc_init_voltage_input();
+	if (current_state==ENGINE_STOP)
+	{
+		if (get_voltage_battery()>VOLTAGE_RUN_ENGINE) current_state=ENGINE_RUN;
+	}
+	if (current_state==ENGINE_RUN)
+	{
+		if (get_voltage_battery()<VOLTAGE_STARTER_STOP) current_state=ENGINE_STOP;
+	}
+}
+
 int main(void)
 {
 	wdt_enable(WDTO_4S);
@@ -403,6 +416,7 @@ int main(void)
 // 		uart_send_string(UART_USB,"\r\n");
 	 	
 //		switch_led();
+		check_current_state();
 		if (current_state==ENGINE_STOPPING) stop_engine();
 		if (current_state==ENGINE_RUN)
 		{

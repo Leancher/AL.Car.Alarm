@@ -2,7 +2,7 @@
 #define DEV_NAME "GSM board v1  "
 #define DEFAULT_PHONE_1 "+79210522030"
 #define DEFAULT_PHONE_2 "+79210522030"
-#define COUNT_REQUEST_TRY 3
+#define COUNT_REQUEST_TRY 5
 
 #include "board/board.h"
 #include "refs-avr/bwl_uart.h"
@@ -153,7 +153,7 @@ void engine_start(int count_minutes)
 			if (sserial_response.data[0]==3) string_add_string("Engine starting");
 			return;
 		}
-		_delay_ms(10);
+		_delay_ms(1);
 	}
 	string_add_string("Board not respond");
 }
@@ -173,7 +173,7 @@ void engine_stop()
 			string_add_string("Engine stop");
 			return;
 		}
-		_delay_ms(10);
+		_delay_ms(1);
 	}
 	string_add_string("Board not respond");
 }
@@ -197,7 +197,7 @@ void get_battery_voltage()
 			string_add_string("V");
 			return;
 		}
-		_delay_ms(10);
+		_delay_ms(1);
 	}
 	string_add_string("Board not respond");
 }
@@ -377,7 +377,7 @@ int main(void)
 		
 		regular_operatios();
 		//switch_led();
-		//recive_voltage();
+		recive_voltage();
 		sserial_poll_uart(UART_485);
 		wdt_reset();
 		_delay_ms(1);
