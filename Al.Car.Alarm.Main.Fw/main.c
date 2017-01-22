@@ -264,69 +264,6 @@ void sserial_process_request(unsigned char portindex)
 	}
 }
 
-//义耱
-void led_on()
-{
-	sserial_request.command=19;
-	sserial_request.data[0]=1;
-	sserial_request.data[1]=0;
-	sserial_request.datalength=2;
-	volatile char result=sserial_send_request_wait_response(UART_485, 100);
-	if (result==0)
-	{
-		string_clear();
-		string_add_string("Board not respond");
-	}else
-	{
-		string_add_string("LED on");
-		indicator_set_state(0);
-	}
-}
-//义耱
-void led_off()
-{
-	sserial_request.command=20;
-	sserial_request.data[0]=0;
-	sserial_request.data[1]=0;
-	sserial_request.datalength=2;
-	volatile char result=sserial_send_request_wait_response(UART_485, 100);
-	if (result==0)
-	{
-		string_clear();
-		string_add_string("Board not respond");
-	}
-	else
-	{
-		string_add_string("LED off");
-		indicator_set_state(1);
-	}
-}
-//义耱
-void switch_led()
-{
-	static int current_state=0;
-	static int index=0;
-	index++;
-	if (index>200)
-	{
-		if (button_start_engine_is_pressed()==1)
-		{
-			if (current_state==0)
-			{
-				led_on();
-				current_state=1;
-			}
-			else
-			{
-				led_off();
-				current_state=0;
-			}
-		}
-		index=0;
-	}
-	
-}
-
 void get_bluetooth_data()
 {
 	static int counter=0;
@@ -396,15 +333,77 @@ void check_current_state()
 	}
 }
 
+//义耱
+void led_on()
+{
+	sserial_request.command=8;
+	sserial_request.data[0]=1;
+	sserial_request.data[1]=0;
+	sserial_request.datalength=2;
+	volatile char result=sserial_send_request_wait_response(UART_485, 100);
+	if (result==0)
+	{
+		string_clear();
+		string_add_string("Board not respond");
+	}else
+	{
+		string_add_string("LED on");
+		indicator_set_state(0);
+	}
+}
+//义耱
+void led_off()
+{
+	sserial_request.command=8;
+	sserial_request.data[0]=0;
+	sserial_request.datalength=1;
+	volatile char result=sserial_send_request_wait_response(UART_485, 100);
+	if (result==0)
+	{
+		string_clear();
+		string_add_string("Board not respond");
+	}
+	else
+	{
+		string_add_string("LED off");
+		indicator_set_state(1);
+	}
+}
+//义耱
+void switch_led()
+{
+	static int current_state=0;
+	static int index=0;
+	index++;
+	if (index>200)
+	{
+		if (button_start_engine_is_pressed()==1)
+		{
+			if (current_state==0)
+			{
+				led_on();
+				current_state=1;
+			}
+			else
+			{
+				led_off();
+				current_state=0;
+			}
+		}
+		index=0;
+	}
+}
+
 int main(void)
 {
 	wdt_enable(WDTO_4S);
 	uart_init_withdivider(UART_USB,UBRR_VALUE);
 	uart_init_withdivider(UART_485,UBRR_VALUE);
-	//indicator_set_state(1);
+	//
 
 	device_init();
 
+	indicator_set_state(1);
     while (1) 
     {
 		wdt_reset();
@@ -415,8 +414,8 @@ int main(void)
 // 		uart_send_float(UART_USB,voltage_battery/1000,2);
 // 		uart_send_string(UART_USB,"\r\n");
 	 	
-//		switch_led();
-		check_current_state();
+		switch_led();
+ 		check_current_state();
 		if (current_state==ENGINE_STOPPING) stop_engine();
 		if (current_state==ENGINE_RUN)
 		{

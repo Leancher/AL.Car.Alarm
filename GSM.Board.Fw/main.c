@@ -70,66 +70,46 @@ void regular_operatios()
 		regular_operations_counter=0;
 	}
 }
+
 //义耱
 void led_on()
 {
-	sserial_request.command=19;
-	sserial_request.data[0]=1;
-	sserial_request.data[1]=0;
-	sserial_request.datalength=2;
-	volatile char result=sserial_send_request_wait_response(UART_485, 300);
-	if (result==0)
+	string_clear();
+	for (int counter=1; counter<COUNT_REQUEST_TRY; counter++)
 	{
-		string_clear();
-		string_add_string("Board not respond");
-	}else
-	{
-		string_add_string("LED on");
-		board_led_set(0);
+		sserial_request.command=8;
+		sserial_request.data[0]=1;
+		sserial_request.data[1]=0;
+		sserial_request.datalength=2;
+		volatile char result=sserial_send_request_wait_response(UART_485, 100);
+		if (result !=0)
+		{
+			string_add_string("LED on");
+			board_led_set(0);
+			return;
+		}
 	}
+	string_add_string("Board not respond");
 }
 //义耱
 void led_off()
 {
-	sserial_request.command=20;
-	sserial_request.data[0]=0;
-	sserial_request.data[1]=0;
-	sserial_request.datalength=2;
-	volatile char result=sserial_send_request_wait_response(UART_485, 300);
-	if (result==0)
+	string_clear();
+	for (int counter=1; counter<COUNT_REQUEST_TRY; counter++)
 	{
-		string_clear();
-		string_add_string("Board not respond");
-	}
-	else
-	{
-		string_add_string("LED off");
-		board_led_set(1);
-	}
-}
-//义耱
-void switch_led()
-{
-	static int current_state=0;
-	static int index=0;
-	index++;
-	if (index>200)
-	{
-		if (board_button_get()==1)
+		sserial_request.command=9;
+		sserial_request.data[0]=0;
+		sserial_request.data[1]=0;
+		sserial_request.datalength=2;
+		volatile char result=sserial_send_request_wait_response(UART_485, 100);
+		if (result!=0)
 		{
-			if (current_state==0)
-			{
-				led_on();
-				current_state=1;
-			}
-			else
-			{
-				led_off();
-				current_state=0;
-			}
+			string_add_string("LED off");
+			board_led_set(1);
+			return;
 		}
-		index=0;
 	}
+	string_add_string("Board not respond");
 }
 
 //ENGINE_STOP=1,
@@ -358,6 +338,30 @@ void recive_voltage()
 	}
 }
 
+//义耱
+void switch_led()
+{
+	static int current_state=0;
+	static int index=0;
+	index++;
+	if (index>200)
+	{
+		if (board_button_get()==1)
+		{
+			if (current_state==0)
+			{
+				led_on();
+				current_state=1;
+			}
+			else
+			{
+				led_off();
+				current_state=0;
+			}
+		}
+		index=0;
+	}
+}
 void device_init()
 {
 	board_button_enable();
@@ -370,14 +374,14 @@ int main(void)
 	uart_init_withdivider(UART_GSM,UBRR_VALUE);
 
 	device_init();
-	//board_led_set(1);
+//	board_led_set(1);
 	while(1)
 	{
 		gsm_operations();
 		
 		regular_operatios();
-		//switch_led();
-		recive_voltage();
+		switch_led();
+		//recive_voltage();
 		sserial_poll_uart(UART_485);
 		wdt_reset();
 		_delay_ms(1);
