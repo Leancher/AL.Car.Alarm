@@ -273,7 +273,7 @@ void gsm_received_sms()
 void sserial_process_request(unsigned char portindex)
 {
 	//Сообщение об успешном запуске двигателя
-	if (sserial_request.command==30)
+	if (sserial_request.command==50)
 	{
 		sserial_response.result=128+sserial_request.command;
 		string_clear();
@@ -283,7 +283,7 @@ void sserial_process_request(unsigned char portindex)
 		sserial_send_response();
 	}
 	//Двигатель не запустился
-	if (sserial_request.command==31)
+	if (sserial_request.command==51)
 	{
 		sserial_response.result=128+sserial_request.command;
 		string_clear();
@@ -293,7 +293,7 @@ void sserial_process_request(unsigned char portindex)
 		sserial_send_response();
 	}
 	//Двигатель остановлен
-	if (sserial_request.command==32)
+	if (sserial_request.command==52)
 	{
 		sserial_response.result=128+sserial_request.command;
 		float sensor_temperature_0=ds18b20_get_temperature_float();		
@@ -304,7 +304,17 @@ void sserial_process_request(unsigned char portindex)
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 		sserial_response.datalength=0;
 		sserial_send_response();
-	}	
+	}
+	//Двигатель уже запущен
+	if (sserial_request.command==53)
+	{
+		sserial_response.result=128+sserial_request.command;	
+		string_clear();
+		string_add_string("Engine already started.");
+		gsm_send_sms(gsm_received_sms_phone,string_buffer);
+		sserial_response.datalength=0;
+		sserial_send_response();
+	}
 	if (sserial_request.command==8)
 	{
 		sserial_response.result=128+sserial_request.command;
@@ -380,7 +390,7 @@ int main(void)
 		gsm_operations();
 		
 		regular_operatios();
-		switch_led();
+		//switch_led();
 		//recive_voltage();
 		sserial_poll_uart(UART_485);
 		wdt_reset();

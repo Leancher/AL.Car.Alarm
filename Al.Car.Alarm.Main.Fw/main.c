@@ -7,11 +7,12 @@
 //#METHODS
 #define DEV_NAME "Car alarm 1.0"
 #define ADC_VOLT_MULTIPLIER_MV		(68+2.2)/2.2 * 1.1 //35.1
-#define DELAY_IGNITION_INIT 3000 //3000 ms
+#define ADC_DIODE_CORRECTION 600
+#define DELAY_IGNITION_INIT 30 //30 * 100 ms = 3000 ms
 #define DURING_STARTER_WORK 2000 //2000 ms
 #define DELAY_BEFOR_NEXT_START 5000
 #define VOLTAGE_STARTER_STOP 12500//12500 в машине
-#define VOLTAGE_RUN_ENGINE 13200
+#define VOLTAGE_RUN_ENGINE 13000
 #define VOLTAGE_BAT_MINIMAL 9000
 
 
@@ -23,6 +24,7 @@ typedef enum
 	ENGINE_STARTING=4,
 	ENGINE_RUN=5,
 	ENGINE_STOPPING=6,
+	ENGINE_ALREADY_STARTED=7,
 } DEVICE_STATE;
 DEVICE_STATE current_state = ENGINE_STOP;
 
@@ -61,7 +63,7 @@ int get_voltage_battery()
 {
 	uint16_t val=0;
 	val=adc_read_average(3);
-	val=val*ADC_VOLT_MULTIPLIER_MV;
+	val=val*ADC_VOLT_MULTIPLIER_MV+ADC_DIODE_CORRECTION;
 	return val;
 }
 
@@ -86,9 +88,10 @@ void get_state_start_button()
 	}
 }
 
-//30 - успешный запуск
-//31 - двигатель не смог запуститься
-//32 - двигатель остановлен
+//50 - успешный запуск
+//51 - двигатель не смог запуститься
+//52 - двигатель остановлен
+//53 - двигатель уже запущен
 void send_sms(int number_command)
 {
 	sserial_request.command=number_command;
@@ -104,84 +107,82 @@ void send_sms(int number_command)
 	}
 }
 
-void stop_engine()
-{
-	static int count=0;
-	relay_ignition_set_state(0);
-	indicator_set_state(0);
-	//Если был запуск по СМС, то посылаем сообщение об остановке двигателя
-	if (engine_run_sms==1) send_sms(32);
-	engine_run_sms=0;
-	count++;
-	//Задрежка перед следующим запуском
-	if (count>5000)
-	{
-		current_state=ENGINE_STOP;
-		count=0;
-		indicator_set_state(1);
-	}
-}
 //Включить зажигание
 void ignition_turn_on()
 {
-	static int conter = 0;
+	int counter = 0;
 	relay_ignition_set_state(1);
-	conter++;
-	//Подождать, пока машина подготовиться к запуску
-	if (conter<DELAY_IGNITION_INIT) return;
-	conter=0;
-	//Зажигание подготовлено, переходим к запуску
-	current_state=IGNITION_READY;
-}
-
-//Включаем стартер
-void starter_turn_on()
-{
-	//Инициализируем АЦП здесь, чтобы уменьшить общую задержку
-	adc_init_voltage_input();
-	relay_starter_set_state(1);
-	current_state=ENGINE_STARTING;	
+	while (counter<DELAY_IGNITION_INIT)
+	{
+		wdt_reset();
+		counter++;
+		_delay_ms(100);
+	}
 }
 
 void start_engine()
 {
-	//static int _conter_try = 0;
-	static int conter = 0;	
-	//Если стартер включен долгое время, а двигатель не заведен, выключаем
-	if (conter>DURING_STARTER_WORK)
+	int counter = 0;
+	while (get_voltage_battery()<VOLTAGE_STARTER_STOP)
 	{
-		relay_starter_set_state(0);
-		current_state=ENGINE_STOPPING;
-		conter=0;
-		if (engine_run_sms==1 ) send_sms(31);
-		engine_run_sms=0;
-		return;	
+		//Если стартер включен долгое время, а двигатель не заведен, выключаем
+		if (counter>DURING_STARTER_WORK)
+		{
+			relay_starter_set_state(0);
+			current_state=ENGINE_STOP;
+			return;	
+		}
+		wdt_reset();
+		counter++;
+		_delay_ms(1);
 	}
-	conter++;
-	wdt_reset();
-	if (get_voltage_battery()<VOLTAGE_STARTER_STOP) return;
-	conter=0;
 	relay_starter_set_state(0);
 	current_state=ENGINE_RUN;
-//	indicator_set_state(1);
-	if (engine_run_sms==1) send_sms(30);
 	adc_off();
 }
+
+
 
 //Обработка запроса на запуск двигателя
 void process_start_engine_by_sms()
 {
-	if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];	
-	if (current_state==ENGINE_RUN) sserial_response.data[0]=ENGINE_RUN;
-	if (current_state==IGNITION_INIT) sserial_response.data[0]=ENGINE_RUN;
-	if (current_state==ENGINE_STOP)
+	adc_init_voltage_input();
+	if (get_voltage_battery()>VOLTAGE_RUN_ENGINE)
 	{
-		current_state=IGNITION_INIT;
-		sserial_response.data[0]=ENGINE_STARTING;
-		engine_run_sms=1;
+		//Двигатель уже запущен
+		current_state=ENGINE_RUN;
+		sserial_response.data[0]=ENGINE_ALREADY_STARTED;
+		sserial_response.datalength=1;
+		sserial_send_response();
+		send_sms(53);
+		return;
 	}
+	//Двигатель выключен, отправляем ответ
+	if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];
+	//during_work=2;
+	sserial_response.data[0]=ENGINE_STARTING;
+	engine_run_sms=1;
 	sserial_response.datalength=1;
-	sserial_send_response();
+	sserial_send_response();	
+	//Включаем зажигание
+	ignition_turn_on();
+	//Инициализируем АЦП для контроля напряжения
+	adc_init_voltage_input();
+	//Включаем стартер
+	relay_starter_set_state(1);
+	//Запускаем двигатель
+	start_engine();
+	if (engine_run_sms==1) 
+	{
+		//Если двигатель запустился, отправляем сообщение
+		if (current_state==ENGINE_RUN) send_sms(50);
+		//Если двигатель не запустился, отправляем сообщение, выключаем зажигание
+		if (current_state==ENGINE_STOP)
+		{
+			send_sms(51);
+			relay_ignition_set_state(0);
+		}
+	}
 }
 
 void sserial_process_request(unsigned char portindex)
@@ -280,58 +281,9 @@ void get_bluetooth_data()
 		}
 	}
 }
-//Обратный отсчет времени после запуска по СМС
-void count_during_work()
-{
-	static int counter_ms=0;
-	static int counter_sec=0;
 
-	if (during_work>0)
-	{
-		adc_init_voltage_acc();
-		counter_ms++;
-		//Считаем милисекунды
-		if (counter_ms>1000)
-		{
-			counter_sec++;
-			counter_ms=0;
-		}
-		//Считаем секунды
-		if (counter_sec>60)
-		{
-			during_work--;
-			counter_sec=0;
-		}
-		//Если ключ вставлен, то питание идет через замок зажигания, выключаем все.
-		if (get_acc_voltage()>VOLTAGE_BAT_MINIMAL)
-		{
-			wdt_reset();
-			current_state=ENGINE_RUN;
-			relay_ignition_set_state(0);
-			engine_run_sms=0;
-			counter_ms=0;
-			counter_sec=0;
-		}
-	}
-	//Если время кончилось, переходим к остановке
-	else
-	{
-		current_state=ENGINE_STOPPING;
-	}
-}
 
-void check_current_state()
-{
-	adc_init_voltage_input();
-	if (current_state==ENGINE_STOP)
-	{
-		if (get_voltage_battery()>VOLTAGE_RUN_ENGINE) current_state=ENGINE_RUN;
-	}
-	if (current_state==ENGINE_RUN)
-	{
-		if (get_voltage_battery()<VOLTAGE_STARTER_STOP) current_state=ENGINE_STOP;
-	}
-}
+
 
 //Тест
 void led_on()
@@ -394,12 +346,53 @@ void switch_led()
 	}
 }
 
+//Обратный отсчет времени после запуска по СМС
+void count_during_work()
+{
+	static int counter_ms=0;
+	static int counter_sec=0;
+
+	if (during_work>0)
+	{
+		adc_init_voltage_acc();
+		counter_ms++;
+		//Считаем милисекунды
+		if (counter_ms>1000)
+		{
+			counter_sec++;
+			counter_ms=0;
+		}
+		//Считаем секунды
+		if (counter_sec>60)
+		{
+			during_work--;
+			counter_sec=0;
+		}
+		//Если ключ вставлен, то питание идет через замок зажигания, выключаем все.
+		if (get_acc_voltage()>VOLTAGE_BAT_MINIMAL)
+		{
+			wdt_reset();
+			relay_ignition_set_state(0);
+			engine_run_sms=0;
+			counter_ms=0;
+			counter_sec=0;
+		}
+	}
+	//Если время кончилось, переходим к остановке
+	else
+	{
+		relay_ignition_set_state(0);
+		current_state=ENGINE_STOP;
+		send_sms(32);
+		engine_run_sms=0;
+	}
+}
+
 int main(void)
 {
 	wdt_enable(WDTO_4S);
 	uart_init_withdivider(UART_USB,UBRR_VALUE);
 	uart_init_withdivider(UART_485,UBRR_VALUE);
-	//
 
 	device_init();
 
@@ -414,17 +407,12 @@ int main(void)
 // 		uart_send_float(UART_USB,voltage_battery/1000,2);
 // 		uart_send_string(UART_USB,"\r\n");
 	 	
-		switch_led();
- 		check_current_state();
-		if (current_state==ENGINE_STOPPING) stop_engine();
+//		switch_led();
 		if (current_state==ENGINE_RUN)
 		{
 			if (engine_run_sms==1) count_during_work();
+			if (get_voltage_battery()<VOLTAGE_RUN_ENGINE) current_state=ENGINE_STOP;
 		}
-		if (current_state==ENGINE_STARTING) start_engine();
-		if (current_state==IGNITION_READY) starter_turn_on();
-		if (current_state==IGNITION_INIT) ignition_turn_on();
-		
  		sserial_poll_uart(UART_485);
 		_delay_ms(1);
 
