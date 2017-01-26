@@ -47,7 +47,7 @@ int get_acc_voltage()
 {
 	uint16_t val=0;
 	val=adc_read_average(3);
-	val=val*ADC_VOLT_MULTIPLIER_MV+ADC_DIODE_CORRECTION;
+	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
 	return val;
 // 	static unsigned long sum=0;
 // 	static int count=0;
@@ -63,11 +63,19 @@ int get_acc_voltage()
 // 	return 0;
 }
 
+int get_voltage()
+{
+	uint16_t val=0;
+	val=adc_read_average(3);
+	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
+	return val;
+}
+
 int get_voltage_battery()
 {
 	uint16_t val=0;
 	val=adc_read_average(3);
-	val=val*ADC_VOLT_MULTIPLIER_MV+ADC_DIODE_CORRECTION;
+	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
 	return val;
 }
 
@@ -138,8 +146,8 @@ void starter_work_control()
 //Обработка запроса на запуск двигателя
 void process_start_engine_by_sms()
 {
-	adc_init_voltage_input();
-	if (get_voltage_battery()>VOLTAGE_RUN_ENGINE)
+	adc_init_voltage_generator();
+	if (get_voltage()>VOLTAGE_RUN_ENGINE)
 	{
 		//Двигатель уже запущен
 		current_state=ENGINE_RUN;
@@ -358,14 +366,14 @@ void count_during_work()
 			counter_sec=0;
 		}
 		//Если ключ вставлен, то питание идет через замок зажигания, выключаем все.
-		if (get_acc_voltage()>VOLTAGE_BAT_MINIMAL)
-		{
-			wdt_reset();
-			relay_ignition_set_state(0);
-			engine_run_sms=0;
-			counter_ms=0;
-			counter_sec=0;
-		}
+// 		if (get_acc_voltage()>VOLTAGE_BAT_MINIMAL)
+// 		{
+// 			wdt_reset();
+// 			relay_ignition_set_state(0);
+// 			engine_run_sms=0;
+// 			counter_ms=0;
+// 			counter_sec=0;
+// 		}
 	}
 	//Если время кончилось, переходим к остановке
 	else

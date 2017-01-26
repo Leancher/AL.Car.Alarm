@@ -29,7 +29,7 @@ typedef unsigned char byte;
 void var_delay_ms(int ms);
 
 void set_unused_pin();
-
+void adc_init_voltage_generator();
 void adc_init_voltage_input();
 void adc_init_voltage_acc();
 

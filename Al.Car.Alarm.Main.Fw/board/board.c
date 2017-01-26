@@ -48,6 +48,11 @@ void set_unused_pin()
 	setbit(PORTD,7,0);
 }
 
+void adc_init_voltage_generator()
+{
+	adc_init(2, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
+}
+
 void adc_init_voltage_input()
 {
 	adc_init(1, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
