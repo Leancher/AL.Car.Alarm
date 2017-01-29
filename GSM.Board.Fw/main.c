@@ -166,13 +166,11 @@ void get_battery_voltage()
 		sserial_request.command=4;
 		sserial_request.datalength=0;
 		volatile char result=sserial_send_request_wait_response(UART_485, 100);
-		string_clear();
 		if (result!=0)
 		{
-			string_clear();
 			float val = sserial_response.data[0];
 			val /= 10;
-			string_add_string("Battery voltage: ");
+			string_add_string("Bat. vol: ");
 			string_add_float(val,1);
 			string_add_string("V");
 			return;
@@ -184,7 +182,7 @@ void get_battery_voltage()
 
 void gsm_received_sms()
 {
-	if (strstr(gsm_received_sms_text,"00")>0)	{gsm_send_sms(gsm_received_sms_phone, "01 Ping, 02 Devname, 03 Temp, 04 Bat voltage, 05 Engine stop, 10,15,20,25,30 Engine run minutes ");	}
+	if (strstr(gsm_received_sms_text,"00")>0)	{gsm_send_sms(gsm_received_sms_phone, "01 Ping, 02 Devname, 03 Temp & Bat vol, 04 Bat vol, 05 Engine stop, 10,15,20,25,30 Engine run minutes ");	}
 	
 	//Проверка связи
 	if (strstr(gsm_received_sms_text,"01")>0)	{gsm_send_sms(gsm_received_sms_phone, "Pong!");	}
@@ -203,11 +201,15 @@ void gsm_received_sms()
 	//Температура с датчика на плате
 	if (strstr(gsm_received_sms_text,"03")>0)
 	{
-		float sensor_temperature_0=ds18b20_get_temperature_float();
 		string_clear();
-		string_add_string("Temperature: ");
+		get_battery_voltage();
+
+		float sensor_temperature_0=ds18b20_get_temperature_float();
+		string_add_string(" ");
+		string_add_string("Temp: ");
 		
 		string_add_float(sensor_temperature_0,1);
+
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 	}
 	//Напряжения батареи в машине
