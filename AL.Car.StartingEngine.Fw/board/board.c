@@ -50,65 +50,64 @@ void set_unused_pin()
 
 void adc_init_voltage_generator()
 {
-	adc_init(2, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
+	adc_init(ADC_IN_GENERATOR_VOLTAGE, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
 }
 
-void adc_init_voltage_input()
+void adc_init_vol_power_in()
+{
+	adc_init(0, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
+}
+
+void adc_init_vol_dig_in()
 {
 	adc_init(1, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
 }
 
-void adc_init_voltage_acc()
+void relay_ignition_set_state(byte state)
 {
-	adc_init(2, ADC_ADJUST_RIGHT, ADC_REFS_INTERNAL_1_1,  ADC_PRESCALER_32);
+	setbit(DDRB,0,1);
+	setbit(PORTB,0,state);
 }
 
 void relay_starter_set_state(byte state)
 {
-	setbit(DDRA,4,1);
-	setbit(PORTA,4,state);
+	setbit(DDRB,1,1);
+	setbit(PORTB,1,state);
 }
 
-void relay_ignition_set_state(byte state)
+void relay_starter_acc_state(byte state)
 {
-	setbit(DDRA,3,1);
-	setbit(PORTA,3,state);
+	setbit(DDRB,2,1);
+	setbit(PORTB,2,state);
 }
 
-void button_start_engine_enable()
+void board_led_set_state(byte state)
 {
-	setbit(DDRB,4,0);
-	setbit(PORTB,4,1);
+	setbit(DDRD,7,1);
+	setbit(PORTD,7,state);
 }
 
-byte button_start_engine_is_pressed()
+void board_button_enable()
 {
-	if (getbit(PINB,4)) {return 0;}
-	return 1;
+	setbit(DDRD,6,0);
+	setbit(PORTD,6,1);
 }
 
-void indicator_set_state(byte state)
+byte board_button_is_pressed()
 {
-	setbit(DDRB,5,1);
-	setbit(PORTB,5,state);
+	if (getbit(PIND,6)) {return 0;}
+	return 1;	
 }
 
-//0 - on, 1 - off
-void gsm_relay_set_state(byte state)
+void sensor_ignition_key_enable()
 {
-	setbit(DDRC,7,1);
-	setbit(PORTC,7,state);
+	setbit(DDRB,5,0);
+	setbit(PORTB,5,1);	
 }
 
-void bluetooth_data_in_enable()
+byte sensor_ignition_key_is_pressed()
 {
-	setbit(DDRD,4,0);
-	setbit(PORTD,4,1);	
-}
-
-byte bluetooth_data_in()
-{
-	if (getbit(PIND,4)) {return 0;}
+	if (getbit(PINB,5)) {return 0;}
 	return 1;	
 }
 
