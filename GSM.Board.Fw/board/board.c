@@ -205,3 +205,9 @@ void watchdog_power_on()
 	setbit(PORTB,7,0);
 	wdt_reset();
 }
+
+void rs485_send_start()
+{
+	setbit(DDRH,2,1);
+	setbit(PORTH,2,0);	
+}

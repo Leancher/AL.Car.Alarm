@@ -1,8 +1,20 @@
-//Atmel Studio Firmware Starting Engine board v1.1
+//Atmel Studio Firmware Car alarm v1
 
 #include "board/board.h"
-#include "config.h"
+
 #include <avr/wdt.h>
+
+//#METHODS
+#define DEV_NAME "Car alarm 1.0"
+#define ADC_VOLT_MULTIPLIER_MV		(68+2.2)/2.2 * 1.1 //35.1
+#define ADC_DIODE_CORRECTION 600
+#define DELAY_IGNITION_INIT 30 //30 * 100 ms = 3000 ms
+#define DURING_STARTER_WORK 2000 //2000 ms
+#define DELAY_BEFOR_NEXT_START 5000
+#define VOLTAGE_STARTER_STOP 12500//12500 в машине
+#define VOLTAGE_RUN_ENGINE 13000
+#define VOLTAGE_BAT_MINIMAL 9000
+
 
 typedef enum
 {
@@ -20,27 +32,11 @@ uint16_t voltage_battery=0;
 int during_work=0;
 //1 - если двигатель запущен с помощью СМС
 byte engine_run_sms=0;
-
-void sserial_send_start(unsigned char portindex)
-{
-	if (portindex==UART_485){
-		rs485_send_start();
-	}
-}
-
-void sserial_send_end(unsigned char portindex)
-{
-	if (portindex==UART_485)
-	{
-		var_delay_ms(1);
-		rs485_send_end();
-	}
-}
+byte bluetooth_label_presence=0;
 
 void device_init()
 {
 	set_unused_pin();
-	board_button_enable();
 	relay_ignition_set_state(0);
 	relay_starter_set_state(0);
 }
@@ -71,6 +67,28 @@ int get_voltage()
 	val=adc_read_average(3);
 	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
 	return val;
+}
+
+int get_voltage_battery()
+{
+	uint16_t val=0;
+	val=adc_read_average(3);
+	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
+	return val;
+}
+
+void get_state_start_button()
+{
+	static int index=0;
+	index++;	
+	if (index>300)
+	{
+		if (board_button_is_pressed()==1)
+		{
+			//select_current_state();
+		}
+		index=0;	
+	}
 }
 
 //50 - успешный запуск
@@ -108,7 +126,7 @@ void ignition_turn_on()
 void starter_work_control()
 {
 	int counter = 0;
-	while (get_voltage()<VOLTAGE_STARTER_STOP)
+	while (get_voltage_battery()<VOLTAGE_STARTER_STOP)
 	{
 		//Если стартер включен долгое время, а двигатель не заведен, выключаем
 		if (counter>DURING_STARTER_WORK)
@@ -139,7 +157,7 @@ void process_start_engine_by_sms()
 	}
 	//Двигатель выключен, отправляем ответ
 	if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];
-	during_work=2;
+	//during_work=2;
 	sserial_response.data[0]=ENGINE_STARTING;
 	engine_run_sms=1;
 	sserial_response.datalength=1;
@@ -171,7 +189,7 @@ void sserial_process_request(unsigned char portindex)
 		sserial_response.result=128+sserial_request.command;
 		adc_init_vol_power_in();
 		//Данные с АЦП состоят из пяти символов. Переслать можно только три символа, делим на 100
-		sserial_response.data[0]=get_voltage()/100;
+		sserial_response.data[0]=get_voltage_battery()/100;
 		sserial_response.datalength=1;
 		sserial_send_response();
 		adc_off();
@@ -259,7 +277,6 @@ void led_on()
 	}else
 	{
 		string_add_string("LED on");
-		//board_led_set_state(0);
 	}
 }
 //Тест
@@ -277,7 +294,6 @@ void led_off()
 	else
 	{
 		string_add_string("LED off");
-		//board_led_set_state(1);
 	}
 }
 //Тест
@@ -313,7 +329,7 @@ void count_during_work()
 
 	if (during_work>0)
 	{
-		adc_init_vol_dig_in();
+		adc_init_vol_power_in();
 		counter_ms++;
 		//Считаем милисекунды
 		if (counter_ms>1000)
@@ -359,8 +375,14 @@ int main(void)
     while (1) 
     {
 		wdt_reset();
+		
+//		get_bluetooth_data();
+//		indicator_set_state(bluetooth_label_presence);
+//		if (bluetooth_label_presence==1) get_state_start_button();
+// 		uart_send_float(UART_USB,voltage_battery/1000,2);
+// 		uart_send_string(UART_USB,"\r\n");
 	 	
-		//switch_led();
+//		switch_led();
 		if (current_state==ENGINE_RUN)
 		{
 			if (engine_run_sms==1) count_during_work();
@@ -368,6 +390,7 @@ int main(void)
 		}
  		sserial_poll_uart(UART_485);
 		_delay_ms(1);
+
     }
 }
 

@@ -84,7 +84,6 @@ void led_on()
 		if (result !=0)
 		{
 			string_add_string("LED on");
-			//board_led_set(0);
 			return;
 		}
 	}
@@ -103,7 +102,6 @@ void led_off()
 		if (result!=0)
 		{
 			string_add_string("LED off");
-			//board_led_set(1);
 			return;
 		}
 	}
