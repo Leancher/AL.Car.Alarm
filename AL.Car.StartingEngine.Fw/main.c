@@ -21,6 +21,22 @@ int during_work=0;
 //1 - если двигатель запущен с помощью СМС
 byte engine_run_sms=0;
 
+void sserial_send_start(unsigned char portindex)
+{
+	if (portindex==UART_485){
+		rs485_send_start();
+	}
+}
+
+void sserial_send_end(unsigned char portindex)
+{
+	if (portindex==UART_485)
+	{
+		var_delay_ms(1);
+		rs485_send_end();
+	}
+}
+
 void device_init()
 {
 	set_unused_pin();
@@ -234,8 +250,7 @@ void led_on()
 {
 	sserial_request.command=8;
 	sserial_request.data[0]=1;
-	sserial_request.data[1]=0;
-	sserial_request.datalength=2;
+	sserial_request.datalength=1;
 	volatile char result=sserial_send_request_wait_response(UART_485, 100);
 	if (result==0)
 	{
@@ -244,13 +259,13 @@ void led_on()
 	}else
 	{
 		string_add_string("LED on");
-		board_led_set_state(0);
+		//board_led_set_state(0);
 	}
 }
 //Тест
 void led_off()
 {
-	sserial_request.command=8;
+	sserial_request.command=9;
 	sserial_request.data[0]=0;
 	sserial_request.datalength=1;
 	volatile char result=sserial_send_request_wait_response(UART_485, 100);
@@ -262,7 +277,7 @@ void led_off()
 	else
 	{
 		string_add_string("LED off");
-		board_led_set_state(1);
+		//board_led_set_state(1);
 	}
 }
 //Тест
@@ -278,7 +293,6 @@ void switch_led()
 			if (current_state==0)
 			{
 				led_on();
-				process_start_engine_by_sms();
 				current_state=1;
 			}
 			else
@@ -336,7 +350,7 @@ void count_during_work()
 int main(void)
 {
 	wdt_enable(WDTO_4S);
-	uart_init_withdivider(UART_USB,UBRR_VALUE);
+	uart_init_withdivider(UART_BT,UBRR_VALUE);
 	uart_init_withdivider(UART_485,UBRR_VALUE);
 
 	device_init();
@@ -345,11 +359,8 @@ int main(void)
     while (1) 
     {
 		wdt_reset();
-		
-// 		uart_send_float(UART_USB,voltage_battery/1000,2);
-// 		uart_send_string(UART_USB,"\r\n");
 	 	
-		switch_led();
+		//switch_led();
 		if (current_state==ENGINE_RUN)
 		{
 			if (engine_run_sms==1) count_during_work();

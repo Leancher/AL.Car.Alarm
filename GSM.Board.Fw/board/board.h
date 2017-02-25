@@ -3,7 +3,7 @@
 
 #define F_CPU 8000000UL
 
-#define UART_485 1
+#define UART_485 0
 
 #define UART_GSM 2
 #define UART_GPS 3

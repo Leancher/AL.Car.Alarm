@@ -79,13 +79,12 @@ void led_on()
 	{
 		sserial_request.command=8;
 		sserial_request.data[0]=1;
-		sserial_request.data[1]=0;
-		sserial_request.datalength=2;
+		sserial_request.datalength=1;
 		volatile char result=sserial_send_request_wait_response(UART_485, 100);
 		if (result !=0)
 		{
 			string_add_string("LED on");
-			board_led_set(0);
+			//board_led_set(0);
 			return;
 		}
 	}
@@ -99,13 +98,12 @@ void led_off()
 	{
 		sserial_request.command=9;
 		sserial_request.data[0]=0;
-		sserial_request.data[1]=0;
-		sserial_request.datalength=2;
+		sserial_request.datalength=1;
 		volatile char result=sserial_send_request_wait_response(UART_485, 100);
 		if (result!=0)
 		{
 			string_add_string("LED off");
-			board_led_set(1);
+			//board_led_set(1);
 			return;
 		}
 	}

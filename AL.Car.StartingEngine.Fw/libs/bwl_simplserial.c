@@ -18,7 +18,7 @@ unsigned int sserial_buffer_pointer;
 unsigned char sserial_buffer_overflow;
 uint16_t sserial_crc16;
 byte sserial_bootloader_present=0;
-byte sserial_portindex=0;
+byte sserial_portindex=1;
 
 void sserial_append_devname(byte startIndex, byte length, char* newname)
 {

@@ -115,3 +115,15 @@ void var_delay_ms(int ms)
 {
 	for (int i=0; i<ms; i++)_delay_ms(1.0);
 }
+
+void rs485_send_start()
+{
+	setbit(DDRD,5,1);
+	setbit(PORTD,5,1);
+}
+
+void rs485_send_end()
+{
+	setbit(DDRD,5,1);
+	setbit(PORTD,5,0);
+}

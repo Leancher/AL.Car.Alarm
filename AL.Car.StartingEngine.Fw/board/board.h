@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <util/setbaud.h>
 
-#define UART_USB 0
+#define UART_BT 0
 #define UART_485 1
 
 #define getbit(port, bit)		((port) &   (1 << (bit)))
@@ -44,5 +44,8 @@ byte sensor_ignition_key_is_pressed();
 void board_button_enable();
 byte board_button_is_pressed();
 void board_led_set_state(byte state);
+
+void rs485_send_start();
+void rs485_send_end();
 
 #endif
