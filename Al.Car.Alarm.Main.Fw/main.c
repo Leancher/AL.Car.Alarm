@@ -36,40 +36,11 @@ byte bluetooth_label_presence=0;
 
 void device_init()
 {
-	set_unused_pin();
 	relay_ignition_set_state(0);
 	relay_starter_set_state(0);
 }
 
-int get_acc_voltage()
-{
-	uint16_t val=0;
-	val=adc_read_average(3);
-	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
-	return val;
-// 	static unsigned long sum=0;
-// 	static int count=0;
-// 	
-// 	sum+=adc_read_once();
-// 	count++;
-// 	if (count>2)
-// 	{
-// 		sum=sum/count;
-// 		sum=sum*ADC_VOLT_MULTIPLIER_MV;
-// 		return sum/count;
-// 	}
-// 	return 0;
-}
-
 int get_voltage()
-{
-	uint16_t val=0;
-	val=adc_read_average(3);
-	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
-	return val;
-}
-
-int get_voltage_battery()
 {
 	uint16_t val=0;
 	val=adc_read_average(3);
@@ -126,7 +97,7 @@ void ignition_turn_on()
 void starter_work_control()
 {
 	int counter = 0;
-	while (get_voltage_battery()<VOLTAGE_STARTER_STOP)
+	while (get_voltage()<VOLTAGE_STARTER_STOP)
 	{
 		//Если стартер включен долгое время, а двигатель не заведен, выключаем
 		if (counter>DURING_STARTER_WORK)
@@ -189,7 +160,7 @@ void sserial_process_request(unsigned char portindex)
 		sserial_response.result=128+sserial_request.command;
 		adc_init_vol_power_in();
 		//Данные с АЦП состоят из пяти символов. Переслать можно только три символа, делим на 100
-		sserial_response.data[0]=get_voltage_battery()/100;
+		sserial_response.data[0]=get_voltage()/100;
 		sserial_response.datalength=1;
 		sserial_send_response();
 		adc_off();
@@ -375,12 +346,6 @@ int main(void)
     while (1) 
     {
 		wdt_reset();
-		
-//		get_bluetooth_data();
-//		indicator_set_state(bluetooth_label_presence);
-//		if (bluetooth_label_presence==1) get_state_start_button();
-// 		uart_send_float(UART_USB,voltage_battery/1000,2);
-// 		uart_send_string(UART_USB,"\r\n");
 	 	
 //		switch_led();
 		if (current_state==ENGINE_RUN)
