@@ -154,6 +154,25 @@ void engine_stop()
 	string_add_string("Board not respond");
 }
 
+void get_bat_vol_param()
+{
+	for (int counter=1; counter<COUNT_REQUEST_TRY; counter++)
+	{
+		wdt_reset();
+		sserial_request.command=4;
+		sserial_request.datalength=0;
+		volatile char result=sserial_send_request_wait_response(UART_485, 100);
+		if (result==0)
+		{
+			string_add_string("ND");
+			return;
+		}
+		float val = sserial_response.data[0];
+		val /= 10;
+		string_add_float(val,1);
+	}
+}
+
 void get_battery_voltage()
 {
 	for (int counter=1; counter<COUNT_REQUEST_TRY; counter++)
@@ -176,25 +195,44 @@ void get_battery_voltage()
 	string_add_string("Board not respond");
 }
 
+void send_add_time()
+{	
+	for (int counter=1; counter<COUNT_REQUEST_TRY; counter++)
+	{
+		wdt_reset();
+		sserial_request.command=35;
+		sserial_request.data[0]=1;
+		sserial_request.datalength=1;
+		volatile char result=sserial_send_request_wait_response(UART_485, 100);
+		string_clear();
+		if (result != 0)
+		{
+			string_add_string("add");
+			return;
+		}
+		_delay_ms(1);
+	}
+	string_add_string("ND");
+}
+
 void gsm_received_sms()
 {
-	if (strstr(gsm_received_sms_text,"00")>0)	{gsm_send_sms(gsm_received_sms_phone, "01 Ping, 02 Devname, 03 Temp & Bat vol, 04 Bat vol, 05 Engine stop, 10,15,20,25,30 Engine run minutes ");	}
+	if (strstr(gsm_received_sms_text,"00")>0)	{gsm_send_sms(gsm_received_sms_phone, "01 - Error code, 02 - add 5 min, 03 Temp & Bat vol, 05 Engine stop, 06 Send only param, 10,15,20,25,30 Engine run min");	}
 	
-	//Проверка связи
-	if (strstr(gsm_received_sms_text,"01")>0)	{gsm_send_sms(gsm_received_sms_phone, "Pong!");	}
-	//Имя устройства
-	if (strstr(gsm_received_sms_text,"02")>0)
+	//Отправить коды ошибок
+	if (strstr(gsm_received_sms_text,"01")>0)	
 	{
 		string_clear();
-		string_add_string("Board Devname: ");
-		for (byte i=0; i<32; i++)
-		{
-			if (sserial_devname[i]>0)		string_add_char(sserial_devname[i]);
-		}
-		string_add_char(0);
-		gsm_send_sms(gsm_received_sms_phone, string_buffer);
+		string_add_string("01 - engine not start, 02 - engine already started");
+		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 	}
-	//Температура с датчика на плате
+	//Добавить 5 мин
+	if (strstr(gsm_received_sms_text,"02")>0)
+	{
+		send_add_time();
+		gsm_send_sms(gsm_received_sms_phone,string_buffer);
+	}
+	//Температура и напряжение с датчика на плате
 	if (strstr(gsm_received_sms_text,"03")>0)
 	{
 		string_clear();
@@ -209,21 +247,30 @@ void gsm_received_sms()
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 	}
 	//Напряжения батареи в машине
-	if (strstr(gsm_received_sms_text,"04")>0)
-	{
-		wdt_reset();
-		string_clear();
-		get_battery_voltage();
-		gsm_send_sms(gsm_received_sms_phone,string_buffer);
-	}
+// 	if (strstr(gsm_received_sms_text,"04")>0)
+// 	{
+	
+// 	}
 	//Остановить двигатель
 	if (strstr(gsm_received_sms_text,"05")>0)
 	{
 		wdt_reset();
 		string_clear();
 		engine_stop();
-		//gsm_send_sms(gsm_received_sms_phone,string_buffer);	
+		gsm_send_sms(gsm_received_sms_phone,string_buffer);	
 	}
+	//Отправить только параметры
+	if (strstr(gsm_received_sms_text,"06")>0)
+	{
+		wdt_reset();
+		string_clear();
+		string_add_string("prm;");
+		get_bat_vol_param();
+		float sensor_temperature_0=ds18b20_get_temperature_float();
+		string_add_string(";");
+		string_add_float(sensor_temperature_0,1);
+		gsm_send_sms(gsm_received_sms_phone,string_buffer);
+	}	
 	//Тест
 	if (strstr(gsm_received_sms_text,"08")>0)
 	{
@@ -275,7 +322,7 @@ void sserial_process_request(unsigned char portindex)
 	{
 		sserial_response.result=128+sserial_request.command;
 		string_clear();
-		string_add_string("Engine run");
+		string_add_string("ok");
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 		sserial_response.datalength=0;
 		sserial_send_response();
@@ -285,7 +332,7 @@ void sserial_process_request(unsigned char portindex)
 	{
 		sserial_response.result=128+sserial_request.command;
 		string_clear();
-		string_add_string("Error. Engine does not start.");
+		string_add_string("er;01");
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 		sserial_response.datalength=0;
 		sserial_send_response();
@@ -296,8 +343,8 @@ void sserial_process_request(unsigned char portindex)
 		sserial_response.result=128+sserial_request.command;
 		float sensor_temperature_0=ds18b20_get_temperature_float();		
 		string_clear();
-		string_add_string("Engine stop. ");
-		string_add_string("Temperature: ");	
+		string_add_string("stop");
+		string_add_string(";");	
 		string_add_float(sensor_temperature_0,1);
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 		sserial_response.datalength=0;
@@ -308,7 +355,7 @@ void sserial_process_request(unsigned char portindex)
 	{
 		sserial_response.result=128+sserial_request.command;	
 		string_clear();
-		string_add_string("Engine already started.");
+		string_add_string("er;02");
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 		sserial_response.datalength=0;
 		sserial_send_response();

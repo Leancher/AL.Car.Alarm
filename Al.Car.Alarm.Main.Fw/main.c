@@ -25,6 +25,7 @@ typedef enum
 	ENGINE_RUN=5,
 	ENGINE_STOPPING=6,
 	ENGINE_ALREADY_STARTED=7,
+	ADD_FIVE_MIN=8;
 } DEVICE_STATE;
 DEVICE_STATE current_state = ENGINE_STOP;
 
@@ -66,6 +67,7 @@ void get_state_start_button()
 //51 - двигатель не смог запуститься
 //52 - двигатель остановлен
 //53 - двигатель уже запущен
+//54 - добавлено 5 минут
 void send_sms(int number_command)
 {
 	sserial_request.command=number_command;
@@ -231,6 +233,17 @@ void sserial_process_request(unsigned char portindex)
 		wdt_reset();
 		sserial_response.result=128+sserial_request.command;
 		process_start_engine_by_sms();
+	}
+	//Добавить 5 минут
+	if (sserial_request.command==35)
+	{
+		wdt_reset();
+		sserial_response.result=128+sserial_request.command;
+		sserial_response.data[0] = ADD_FIVE_MIN;
+		sserial_response.datalength=1;
+		sserial_send_response();
+		during_work+=5;
+		send_sms(54);
 	}
 }
 
