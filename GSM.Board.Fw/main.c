@@ -162,14 +162,14 @@ void get_bat_vol_param()
 		sserial_request.command=4;
 		sserial_request.datalength=0;
 		volatile char result=sserial_send_request_wait_response(UART_485, 100);
-		if (result==0)
+		if (result!=0)
 		{
-			string_add_string("ND");
+			float val = sserial_response.data[0];
+			val /= 10;
+			string_add_float(val,1);
 			return;
 		}
-		float val = sserial_response.data[0];
-		val /= 10;
-		string_add_float(val,1);
+		string_add_string("ND");
 	}
 }
 
