@@ -47,12 +47,12 @@
         <InterfaceName>JTAG</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800006313</ToolNumber>
+      <ToolNumber>J41800045060</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <avrtoolinterface>JTAG</avrtoolinterface>
     <ExternalProgrammingToolCommand />
-    <avrtoolserialnumber>J41800006313</avrtoolserialnumber>
+    <avrtoolserialnumber>J41800045060</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0x1E9801</avrdeviceexpectedsignature>
     <avrtoolinterfaceclock>200000</avrtoolinterfaceclock>
     <com_atmel_avrdbg_tool_jtagice3plus>

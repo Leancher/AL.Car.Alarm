@@ -25,7 +25,7 @@ typedef enum
 	ENGINE_RUN=5,
 	ENGINE_STOPPING=6,
 	ENGINE_ALREADY_STARTED=7,
-	ADD_FIVE_MIN=8;
+	ADD_FIVE_MIN=8,
 } DEVICE_STATE;
 DEVICE_STATE current_state = ENGINE_STOP;
 
@@ -45,23 +45,11 @@ int get_voltage()
 {
 	uint16_t val=0;
 	val=adc_read_average(3);
-	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
+	val=val*ADC_VOLT_MULTIPLIER_MV+ADC_DIODE_CORRECTION;
 	return val;
 }
 
-void get_state_start_button()
-{
-	static int index=0;
-	index++;	
-	if (index>300)
-	{
-		if (board_button_is_pressed()==1)
-		{
-			//select_current_state();
-		}
-		index=0;	
-	}
-}
+
 
 //50 - успешный запуск
 //51 - двигатель не смог запуститься
@@ -114,8 +102,40 @@ void starter_work_control()
 	current_state=ENGINE_RUN;
 }
 
-//Обработка запроса на запуск двигателя
-void process_start_engine_by_sms()
+//запуск двигателя
+void start_engine()
+{	
+	wdt_reset();
+	ignition_turn_on();
+	relay_starter_set_state(1);
+	starter_work_control();
+	relay_starter_set_state(0);
+	adc_off();
+	//Если двигатель не запустился, выключаем зажигание
+	if (current_state==ENGINE_STOP) relay_ignition_set_state(0);
+}
+
+void get_state_start_button()
+{
+	static int index=0;
+	index++;
+	if (index>300)
+	{
+		if (board_button_is_pressed()==1)
+		{
+			adc_init_voltage_generator();
+			if (get_voltage()>VOLTAGE_RUN_ENGINE)
+			{
+				relay_ignition_set_state(0);
+				return;
+			}
+			start_engine();
+		}
+		index=0;
+	}
+}
+
+void process_received_command_start()
 {
 	adc_init_voltage_generator();
 	if (get_voltage()>VOLTAGE_RUN_ENGINE)
@@ -134,23 +154,12 @@ void process_start_engine_by_sms()
 	sserial_response.data[0]=ENGINE_STARTING;
 	engine_run_sms=1;
 	sserial_response.datalength=1;
-	sserial_send_response();	
-	ignition_turn_on();
-	relay_starter_set_state(1);
-	starter_work_control();
-	relay_starter_set_state(0);
-	adc_off();
-	if (engine_run_sms==1) 
-	{
-		//Если двигатель запустился, отправляем сообщение
-		if (current_state==ENGINE_RUN) send_sms(50);
-		//Если двигатель не запустился, отправляем сообщение, выключаем зажигание
-		if (current_state==ENGINE_STOP)
-		{
-			send_sms(51);
-			relay_ignition_set_state(0);
-		}
-	}
+	sserial_send_response();
+	start_engine();
+	//Если двигатель запустился, отправляем сообщение
+	if (current_state==ENGINE_RUN) send_sms(50);
+	//Если двигатель не запустился, отправляем сообщение, выключаем зажигание
+	if (current_state==ENGINE_STOP) send_sms(51);	
 }
 
 void sserial_process_request(unsigned char portindex)
@@ -204,35 +213,35 @@ void sserial_process_request(unsigned char portindex)
 	{
 		wdt_reset();
 		sserial_response.result=128+sserial_request.command;
-		process_start_engine_by_sms();
+		process_received_command_start();
 	}
 	//Запустить двигатель на 15
 	if (sserial_request.command==15)
 	{
 		wdt_reset();
 		sserial_response.result=128+sserial_request.command;
-		process_start_engine_by_sms();
+		process_received_command_start();
 	}
 	//Запустить двигатель на 20
 	if (sserial_request.command==20)
 	{
 		wdt_reset();
 		sserial_response.result=128+sserial_request.command;
-		process_start_engine_by_sms();
+		process_received_command_start();
 	}
 	//Запустить двигатель на 25
 	if (sserial_request.command==25)
 	{
 		wdt_reset();
 		sserial_response.result=128+sserial_request.command;
-		process_start_engine_by_sms();
+		process_received_command_start();
 	}
 	//Запустить двигатель на 30
 	if (sserial_request.command==30)
 	{
 		wdt_reset();
 		sserial_response.result=128+sserial_request.command;
-		process_start_engine_by_sms();
+		process_received_command_start();
 	}
 	//Добавить 5 минут
 	if (sserial_request.command==35)
@@ -354,13 +363,14 @@ int main(void)
 	uart_init_withdivider(UART_485,UBRR_VALUE);
 
 	device_init();
-
+	board_button_enable();
 	board_led_set_state(1);
+
     while (1) 
     {
 		wdt_reset();
-	 	
-//		switch_led();
+	 	get_state_start_button();
+		//switch_led();
 		if (current_state==ENGINE_RUN)
 		{
 			if (engine_run_sms==1) count_during_work();

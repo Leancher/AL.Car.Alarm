@@ -207,7 +207,7 @@ void send_add_time()
 		string_clear();
 		if (result != 0)
 		{
-			string_add_string("add");
+			string_add_string("add;");
 			return;
 		}
 		_delay_ms(1);
@@ -317,22 +317,28 @@ void gsm_received_sms()
 
 void sserial_process_request(unsigned char portindex)
 {
+	wdt_reset();
 	//Сообщение об успешном запуске двигателя
 	if (sserial_request.command==50)
 	{
 		sserial_response.result=128+sserial_request.command;
-		string_clear();
-		string_add_string("ok");
-		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 		sserial_response.datalength=0;
-		sserial_send_response();
+		sserial_send_response();	
+		string_clear();
+		string_add_string("ok;");
+		get_bat_vol_param();
+		float sensor_temperature_0=ds18b20_get_temperature_float();
+		string_add_string(";");
+		string_add_float(sensor_temperature_0,1);
+		gsm_send_sms(gsm_received_sms_phone,string_buffer);
+
 	}
 	//Двигатель не запустился
 	if (sserial_request.command==51)
 	{
 		sserial_response.result=128+sserial_request.command;
 		string_clear();
-		string_add_string("er;01");
+		string_add_string("er01;");
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 		sserial_response.datalength=0;
 		sserial_send_response();
@@ -341,21 +347,23 @@ void sserial_process_request(unsigned char portindex)
 	if (sserial_request.command==52)
 	{
 		sserial_response.result=128+sserial_request.command;
-		float sensor_temperature_0=ds18b20_get_temperature_float();		
+		sserial_response.datalength=0;
+		sserial_send_response();			
 		string_clear();
-		string_add_string("stop");
-		string_add_string(";");	
+		string_add_string("stop;");
+		get_bat_vol_param();
+		float sensor_temperature_0=ds18b20_get_temperature_float();
+		string_add_string(";");
 		string_add_float(sensor_temperature_0,1);
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
-		sserial_response.datalength=0;
-		sserial_send_response();
+
 	}
 	//Двигатель уже запущен
 	if (sserial_request.command==53)
 	{
 		sserial_response.result=128+sserial_request.command;	
 		string_clear();
-		string_add_string("er;02");
+		string_add_string("er02;");
 		gsm_send_sms(gsm_received_sms_phone,string_buffer);
 		sserial_response.datalength=0;
 		sserial_send_response();
