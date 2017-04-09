@@ -369,8 +369,8 @@ int main(void)
     while (1) 
     {
 		wdt_reset();
-	 	get_state_start_button();
-		//switch_led();
+	 	//get_state_start_button();
+		switch_led();
 		if (current_state==ENGINE_RUN)
 		{
 			if (engine_run_sms==1) count_during_work();

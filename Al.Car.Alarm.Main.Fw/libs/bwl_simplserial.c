@@ -86,7 +86,7 @@ void sserial_sendbyte(byte bt)
 
 void sserial_send_response ()
 {
-	//sserial_send_start(sserial_portindex);
+	sserial_send_start(sserial_portindex);
 	uart_send(sserial_portindex,0);
 	uart_send(sserial_portindex,0);
 	uart_send(sserial_portindex,0x98);
@@ -107,7 +107,7 @@ void sserial_send_response ()
 	uart_send(sserial_portindex,0);
 	uart_send(sserial_portindex,0);
 	uart_send(sserial_portindex,0);
-	//sserial_send_end(sserial_portindex);
+	sserial_send_end(sserial_portindex);
 }
 
 byte mask(byte current, byte newval ,byte mask)
@@ -278,7 +278,7 @@ char sserial_process_internal()
 char sserial_send_request_wait_response(unsigned char portindex, int wait_ms )
 {
 	//send request
-	//sserial_send_start(portindex);
+	sserial_send_start(portindex);
 	uart_send(portindex,0);
 	uart_send(portindex,0);
 	uart_send(portindex,0);
@@ -300,7 +300,7 @@ char sserial_send_request_wait_response(unsigned char portindex, int wait_ms )
 	uart_send(portindex,0);
 	uart_send(portindex,0);
 	uart_send(portindex,0);
-	//sserial_send_end(portindex);		
+	sserial_send_end(portindex);		
 	//wait response
 	volatile unsigned long limit=wait_ms*100;
 	volatile unsigned long counter=0;
@@ -360,7 +360,7 @@ char sserial_send_request_wait_response(unsigned char portindex, int wait_ms )
 void sserial_poll_uart(unsigned char portindex)
 {
 	sserial_portindex=portindex;
-	//sserial_send_end(portindex);
+	sserial_send_end(portindex);
 	if (uart_received(sserial_portindex))
 	{
 		static byte lastbyte;

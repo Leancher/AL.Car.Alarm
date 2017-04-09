@@ -24,4 +24,7 @@ void board_button_enable();
 byte board_button_get();
 void var_delay_ms(int ms);
 
+void sserial_send_start(unsigned char portindex);
+void sserial_send_end(unsigned char portindex);
+
 #endif /* BOARD_H_ */

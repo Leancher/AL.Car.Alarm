@@ -16,24 +16,6 @@
 #include <util/setbaud.h>
 #include <avr/wdt.h>
 
-void sserial_send_start(unsigned char portindex)
-{
-	if (portindex==UART_485){
-		DDRC|=(1<<4);
-		PORTC|=(1<<4);
-	}
-}
-
-void sserial_send_end(unsigned char portindex)
-{
-	if (portindex==UART_485)
-	{
-	    var_delay_ms(1);
-		DDRC|=(1<<4);
-		PORTC&=(~(1<<4));		 	
-	}
-}
-
 char gsm_state_power_on=0;
 unsigned long gsm_state_counter=0;
 void gsm_operations()
@@ -447,7 +429,7 @@ int main(void)
 		//recive_voltage();
 		sserial_poll_uart(UART_485);
 		wdt_reset();
-		_delay_ms(1);
+		_delay_us(100);
 	}
 	
 }

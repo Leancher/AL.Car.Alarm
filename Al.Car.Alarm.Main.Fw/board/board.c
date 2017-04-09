@@ -68,14 +68,17 @@ void var_delay_ms(int ms)
 	for (int i=0; i<ms; i++)_delay_ms(1.0);
 }
 
-void rs485_send_start()
+void sserial_send_start(unsigned char portindex)
 {
-	setbit(DDRD,5,1);
-	setbit(PORTD,5,1);
+	if (portindex==UART_485)	{
+		DDRD|=(1<<5);
+		PORTD|=(1<<5);
+	}
 }
-
-void rs485_send_end()
+void sserial_send_end(unsigned char portindex)
 {
-	setbit(DDRD,5,1);
-	setbit(PORTD,5,0);
+	if (portindex==UART_485)	{
+		DDRD|=(1<<5);
+		PORTD&=(~(1<<5));
+	}
 }

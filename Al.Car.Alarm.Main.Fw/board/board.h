@@ -45,7 +45,7 @@ void board_button_enable();
 byte board_button_is_pressed();
 void board_led_set_state(byte state);
 
-void rs485_send_start();
-void rs485_send_end();
+void sserial_send_start(unsigned char portindex);
+void sserial_send_end(unsigned char portindex);
 
 #endif
