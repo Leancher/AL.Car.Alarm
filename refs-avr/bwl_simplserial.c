@@ -10,7 +10,7 @@
 #include "bwl_simplserial.h"
 #include <avr/io.h>
 #include <avr/pgmspace.h>
-
+#include <avr/interrupt.h>
 #define CATUART_ADDITIONAL 8
 #define SSERIAL_BUFFER_SIZE CATUART_MAX_PACKET_LENGTH+CATUART_ADDITIONAL
 unsigned char sserial_buffer[CATUART_MAX_PACKET_LENGTH+CATUART_ADDITIONAL];
@@ -18,7 +18,7 @@ unsigned int sserial_buffer_pointer;
 unsigned char sserial_buffer_overflow;
 uint16_t sserial_crc16;
 byte sserial_bootloader_present=0;
-byte sserial_portindex=1;
+byte sserial_portindex=0;
 
 void sserial_append_devname(byte startIndex, byte length, char* newname)
 {
@@ -226,20 +226,16 @@ char sserial_process_internal()
 	//in-out control
 	if (sserial_request.command==250)
 	{
-// 		if (sserial_request.data[0]==1)
-// 		{
-// 			DDRB=	mask (DDRB ,sserial_request.data[4],sserial_request.data[6]);
-// 			PORTB=	mask (PORTB,sserial_request.data[5],sserial_request.data[6]);
-// 			
-// 			#ifdef DDRC
-// 			DDRC=	mask (DDRC ,sserial_request.data[7],sserial_request.data[9]);
-// 			PORTC=	mask (PORTC,sserial_request.data[8],sserial_request.data[9]);
-// 			#endif
-// 			
-// 			#ifdef DDRD
-// 			DDRD=	mask (DDRD ,sserial_request.data[10],sserial_request.data[12]);
-// 			PORTD=	mask (PORTD ,sserial_request.data[11],sserial_request.data[12]);
-// 			#endif
+		if (sserial_request.data[0]==1)
+		{
+			DDRB=	mask (DDRB ,sserial_request.data[4],sserial_request.data[6]);
+			PORTB=	mask (PORTB,sserial_request.data[5],sserial_request.data[6]);
+			
+			DDRC=	mask (DDRC ,sserial_request.data[7],sserial_request.data[9]);
+			PORTC=	mask (PORTC,sserial_request.data[8],sserial_request.data[9]);
+			
+			DDRD=	mask (DDRD ,sserial_request.data[10],sserial_request.data[12]);
+			PORTD=	mask (PORTD ,sserial_request.data[11],sserial_request.data[12]);
 		
 			/*DDRB=	sserial_request.data[4];
 			PORTB=	sserial_request.data[5];
@@ -249,25 +245,21 @@ char sserial_process_internal()
 
 			DDRD=	sserial_request.data[10];
 			PORTD=	sserial_request.data[11];		*/	
-//		}
-// 		if (sserial_request.data[0]==2)
-// 		{
-// 			sserial_response.data[4]=DDRB;
-// 			sserial_response.data[5]=PORTB;
-// 			sserial_response.data[6]=PINB;
-// 			
-// 			#ifdef DDRC
-// 			sserial_response.data[7]=DDRC;
-// 			sserial_response.data[8]=PORTC;
-// 			sserial_response.data[9]=PINC;
-// 			#endif
-// 			
-// 			#ifdef DDRD
-// 			sserial_response.data[10]=DDRD;
-// 			sserial_response.data[11]=PORTD;
-// 			sserial_response.data[12]=PIND;
-// 			#endif
-// 		}
+		}
+		if (sserial_request.data[0]==2)
+		{
+			sserial_response.data[4]=DDRB;
+			sserial_response.data[5]=PORTB;
+			sserial_response.data[6]=PINB;
+			
+			sserial_response.data[7]=DDRC;
+			sserial_response.data[8]=PORTC;
+			sserial_response.data[9]=PINC;
+			
+			sserial_response.data[10]=DDRD;
+			sserial_response.data[11]=PORTD;
+			sserial_response.data[12]=PIND;
+		}
 		sserial_response.datalength=16;
 		sserial_send_response();
 		return 1;
@@ -278,6 +270,7 @@ char sserial_process_internal()
 char sserial_send_request_wait_response(unsigned char portindex, int wait_ms )
 {
 	//send request
+	cli();
 	sserial_send_start(portindex);
 	uart_send(portindex,0);
 	uart_send(portindex,0);
@@ -342,6 +335,7 @@ char sserial_send_request_wait_response(unsigned char portindex, int wait_ms )
 							{
 								sserial_response.data[i-3]=sserial_buffer[i];
 							}
+							sei();
 							return 1;
 						}
 					}					
@@ -354,6 +348,7 @@ char sserial_send_request_wait_response(unsigned char portindex, int wait_ms )
 			lastbyte=currbyte;
 		}
 	}
+	sei();
 	return 0;
 }
 

@@ -20,11 +20,10 @@
 #define setbit(port,bit,val)	{if ((val)) {(port)|= (1 << (bit));} else {(port) &= ~(1 << (bit));}}
 
 //User Libraries
-//#include "../config.h"
-#include "../libs/bwl_uart.h"
-#include "../libs/bwl_adc.h"
-#include "../libs/bwl_strings.h"
-#include "../libs/bwl_simplserial.h"
+#include "../../refs-avr/bwl_uart.h"
+#include "../../refs-avr/bwl_adc.h"
+#include "../../refs-avr/bwl_strings.h"
+#include "../../refs-avr/bwl_simplserial.h"
 
 typedef unsigned char byte;
 void var_delay_ms(int ms);

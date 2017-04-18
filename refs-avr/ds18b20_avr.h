@@ -11,7 +11,7 @@
 #define DS18B20_AVR_H_
 typedef unsigned char byte;
 
-#include "../board/board.h"
+#include "board.h"
 
 //предоставляет функции
 //измерить температуру и выдать результат в целочисленной форме
