@@ -3,8 +3,8 @@
 
 #define F_CPU 8000000UL
 #define BAUD 9600
+#define DEV_NAME "Car Starting Engine 2.0"
 
-//Atmel Libraries
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/wdt.h>
@@ -12,18 +12,18 @@
 #include <string.h>
 #include <stdint.h>
 #include <util/setbaud.h>
+#include <avr/interrupt.h>
 
-#define UART_BT 0
 #define UART_485 1
 
 #define getbit(port, bit)		((port) &   (1 << (bit)))
 #define setbit(port,bit,val)	{if ((val)) {(port)|= (1 << (bit));} else {(port) &= ~(1 << (bit));}}
 
-//User Libraries
-#include "../../refs-avr/bwl_uart.h"
-#include "../../refs-avr/bwl_adc.h"
-#include "../../refs-avr/bwl_strings.h"
-#include "../../refs-avr/bwl_simplserial.h"
+#include "../refs/bwl_uart.h"
+#include "../refs/bwl_adc.h"
+#include "../refs/bwl_strings.h"
+#include "../refs/bwl_simplserial.h"
+#include "../modules/control_engine.h"
 
 typedef unsigned char byte;
 void var_delay_ms(int ms);

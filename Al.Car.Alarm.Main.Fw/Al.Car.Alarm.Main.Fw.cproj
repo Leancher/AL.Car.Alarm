@@ -141,61 +141,65 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\refs-avr\bwl_adc.c">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_adc.c</Link>
-    </Compile>
-    <Compile Include="..\refs-avr\bwl_adc.h">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_adc.h</Link>
-    </Compile>
-    <Compile Include="..\refs-avr\bwl_simplserial.c">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_simplserial.c</Link>
-    </Compile>
-    <Compile Include="..\refs-avr\bwl_simplserial.h">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_simplserial.h</Link>
-    </Compile>
-    <Compile Include="..\refs-avr\bwl_strings.c">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_strings.c</Link>
-    </Compile>
-    <Compile Include="..\refs-avr\bwl_strings.h">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_strings.h</Link>
-    </Compile>
-    <Compile Include="..\refs-avr\bwl_uart.c">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_uart.c</Link>
-    </Compile>
-    <Compile Include="..\refs-avr\bwl_uart.h">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_uart.h</Link>
-    </Compile>
-    <Compile Include="..\refs-avr\bwl_uart_ext.c">
-      <SubType>compile</SubType>
-      <Link>refs-avr\bwl_uart_ext.c</Link>
-    </Compile>
     <Compile Include="board\board.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="board\board.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="board\ds18b20_avr.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="board\ds18b20_avr.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="main.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="modules\control_engine.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="modules\control_engine.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_adc.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_adc.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_pins.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_simplserial.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_simplserial.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_simplserial_ext.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_strings.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_strings.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_uart.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_uart.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\bwl_uart_ext.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\ds18b20_avr.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="refs\ds18b20_avr.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="refs-avr" />
     <Folder Include="board" />
+    <Folder Include="modules" />
+    <Folder Include="refs" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>
