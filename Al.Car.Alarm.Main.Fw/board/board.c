@@ -59,8 +59,9 @@ void sensor_ignition_key_enable()
 
 byte sensor_ignition_key_is_pressed()
 {
-	if (getbit(PINB,5)) {return 0;}
-	return 1;	
+	if (getbit(PINB,5)==0) return 1;
+
+	return 0;	
 }
 
 void var_delay_ms(int ms)

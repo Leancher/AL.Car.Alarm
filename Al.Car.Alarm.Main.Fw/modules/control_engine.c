@@ -25,7 +25,7 @@ int get_voltage()
 {
 	int val=0;
 	val=adc_read_average(3);
-	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
+	val=val*ADC_VOLT_MULTIPLIER_MV+ADC_DIODE_CORRECTION;
 	return val;
 }
 
@@ -138,7 +138,7 @@ void process_command_start()
 	}
 	//Двигатель выключен, отправляем ответ
 	if (sserial_request.data[0]<255)	number_minutes_work = sserial_request.data[0];
-	//during_work=2;
+	//number_minutes_work=1;
 	sserial_response.data[0]=ENGINE_STARTING;
 	remote_running=1;
 	sserial_response.datalength=1;
@@ -312,6 +312,14 @@ void process_running_engine()
 	{
 		if (remote_running==1) 
 		{
+			//Если ключ вставлен, то питание идет через замок зажигания, переходим к выключению
+// 			if (sensor_ignition_key_is_pressed()==1)
+// 			{
+// 				//Оставляем 5 сек, чтобы успело включиться реле замка зажигания
+// 				number_minutes_work=1;
+// 				counter_sec=55;
+// 			}
+
 			if (number_minutes_work>0)
 			{
 				counter_ms++;
@@ -333,10 +341,7 @@ void process_running_engine()
 			{
 				remote_running=0;
 			}
-			//Если ключ вставлен, то питание идет через замок зажигания, обнуляем счетчик и переходим к выключению
-			if (sensor_ignition_key_is_pressed()==1) remote_running=0;
-			
-			_delay_ms(1);	
+				
 		}
 		else
 		{	
