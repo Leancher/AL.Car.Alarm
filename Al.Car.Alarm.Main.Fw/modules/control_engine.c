@@ -17,15 +17,15 @@ typedef enum
 DEVICE_STATE current_state = ENGINE_STOP;
 
 int voltage_battery=0;
-int during_work=0;
+int number_minutes_work=0;
 //1 - если двигатель запущен с помощью СМС
-byte engine_run_sms=0;
+byte remote_running=0;
 
 int get_voltage()
 {
 	int val=0;
 	val=adc_read_average(3);
-	val=val*ADC_VOLT_MULTIPLIER_MV+ADC_DIODE_CORRECTION;
+	val=val*ADC_VOLT_MULTIPLIER_MV;//+ADC_DIODE_CORRECTION;
 	return val;
 }
 
@@ -127,10 +127,10 @@ void process_command_start()
 		return;
 	}
 	//Двигатель выключен, отправляем ответ
-	if (sserial_request.data[0]<255)	during_work = sserial_request.data[0];
+	if (sserial_request.data[0]<255)	number_minutes_work = sserial_request.data[0];
 	//during_work=2;
 	sserial_response.data[0]=ENGINE_STARTING;
-	engine_run_sms=1;
+	remote_running=1;
 	sserial_response.datalength=1;
 	sserial_send_response();
 	start_engine();
@@ -225,7 +225,7 @@ void process_command_control_engine()
 		sserial_send_response();
 		relay_ignition_set_state(0);
 		current_state=ENGINE_STOP;
-		engine_run_sms=0;
+		remote_running=0;
 		send_sms(52);
 	}
 	if (sserial_request.command==8)
@@ -289,21 +289,29 @@ void process_command_control_engine()
 		sserial_response.data[0] = ADD_FIVE_MIN;
 		sserial_response.datalength=1;
 		sserial_send_response();
-		during_work+=5;
+		number_minutes_work+=5;
 		send_sms(54);
 	}
 }
 
 //Обратный отсчет времени после запуска по СМС
-void count_during_work()
+void count_minutes_work()
 {
 	static int counter_ms=0;
 	static int counter_sec=0;
 
-	if (during_work>0)
+	if (number_minutes_work>0)
 	{
-		adc_init_vol_power_in();
 		counter_ms++;
+		//Если ключ вставлен, то питание идет через замок зажигания, обнуляем счетчик и переходим к выключению
+		if (sensor_ignition_key_is_pressed()==1)
+		{
+			number_minutes_work=0;
+			relay_ignition_set_state(0);
+			counter_ms=0;
+			counter_sec=0;
+		}
+		
 		//Считаем милисекунды
 		if (counter_ms>1000)
 		{
@@ -313,35 +321,69 @@ void count_during_work()
 		//Считаем секунды
 		if (counter_sec>60)
 		{
-			during_work--;
+			number_minutes_work--;
 			counter_sec=0;
 		}
-		//Если ключ вставлен, то питание идет через замок зажигания, выключаем все.
-		// 		if (get_acc_voltage()>VOLTAGE_BAT_MINIMAL)
-		// 		{
-		// 			wdt_reset();
-		// 			relay_ignition_set_state(0);
-		// 			engine_run_sms=0;
-		// 			counter_ms=0;
-		// 			counter_sec=0;
-		// 		}
+
 	}
 	//Если время кончилось, переходим к остановке
 	else
 	{
 		relay_ignition_set_state(0);
+		counter_ms=0;
+		counter_sec=0;
 		current_state=ENGINE_STOP;
 		send_sms(52);
-		engine_run_sms=0;
+		remote_running=0;
 	}
 	_delay_ms(1);
 }
 
 void process_running_engine()
 {
+	static int counter_ms=0;
+	static int counter_sec=0;
 	if (current_state==ENGINE_RUN)
 	{
-		if (engine_run_sms==1) count_during_work();
-		//if (get_voltage_battery()<VOLTAGE_RUN_ENGINE) current_state=ENGINE_STOP;
+		if (remote_running==1) 
+		{
+	
+			if (number_minutes_work>0)
+			{
+				counter_ms++;
+				//Считаем милисекунды
+				if (counter_ms>1000)
+				{
+					counter_sec++;
+					counter_ms=0;
+				}
+				//Считаем секунды
+				if (counter_sec>60)
+				{
+					number_minutes_work--;
+					counter_sec=0;
+				}
+			}
+			//Если время кончилось, переходим к остановке
+			else
+			{
+				relay_ignition_set_state(0);
+				current_state=ENGINE_STOP;
+				send_sms(52);
+				remote_running=0;
+			}
+			//Если ключ вставлен, то питание идет через замок зажигания, обнуляем счетчик и переходим к выключению
+			if (sensor_ignition_key_is_pressed()==1)
+			{
+				relay_ignition_set_state(0);
+				remote_running=0;
+			}
+			_delay_ms(1);	
+		}
+		else
+		{
+			counter_ms=0;
+			counter_sec=0;		
+		}
 	}
 }

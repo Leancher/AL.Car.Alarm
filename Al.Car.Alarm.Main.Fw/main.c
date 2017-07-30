@@ -5,6 +5,7 @@ void board_init()
 	relay_ignition_set_state(0);
 	relay_starter_set_state(0);
 	board_button_enable();
+	sensor_ignition_key_enable();
 	board_led_set_state(1);
 	setbit(UCSR1B,RXCIE1,1);
 	sei();

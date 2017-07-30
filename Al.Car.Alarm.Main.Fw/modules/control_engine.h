@@ -22,7 +22,7 @@ void start_engine();
 void get_state_start_button();
 void process_command_start();
 void process_command_control_engine();
-void count_during_work();
+void count_minutes_work();
 void process_running_engine();
 
 void led_on();
