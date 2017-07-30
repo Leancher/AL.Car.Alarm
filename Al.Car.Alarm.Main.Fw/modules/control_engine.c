@@ -29,6 +29,15 @@ int get_voltage()
 	return val;
 }
 
+typedef enum
+{
+	RESULT_OK=50,
+	RESULT_ERROR=51,
+	RESULT_STOP=52,
+	RESULT_ALREADY_RUN=53,
+	RESULT_ADD_TIME=54,
+} RESULT_MESSAGE;
+RESULT_MESSAGE  number_command = RESULT_STOP;
 //50 - успешный запуск
 //51 - двигатель не смог запуститься
 //52 - двигатель остановлен
@@ -54,6 +63,7 @@ void ignition_turn_on()
 {
 	int counter = 0;
 	relay_ignition_set_state(1);
+	//Задержка для подготовки к запуску (включается бензонасос для установки давления)
 	while (counter<DELAY_IGNITION_INIT)
 	{
 		wdt_reset();
@@ -123,7 +133,7 @@ void process_command_start()
 		sserial_response.data[0]=ENGINE_ALREADY_STARTED;
 		sserial_response.datalength=1;
 		sserial_send_response();
-		send_sms(53);
+		send_sms(RESULT_ALREADY_RUN);
 		return;
 	}
 	//Двигатель выключен, отправляем ответ
@@ -135,9 +145,9 @@ void process_command_start()
 	sserial_send_response();
 	start_engine();
 	//Если двигатель запустился, отправляем сообщение
-	if (current_state==ENGINE_RUN) send_sms(50);
+	if (current_state==ENGINE_RUN) send_sms(RESULT_OK);
 	//Если двигатель не запустился, отправляем сообщение, выключаем зажигание
-	if (current_state==ENGINE_STOP) send_sms(51);
+	if (current_state==ENGINE_STOP) send_sms(RESULT_ERROR);
 }
 
 //Тест
@@ -226,7 +236,7 @@ void process_command_control_engine()
 		relay_ignition_set_state(0);
 		current_state=ENGINE_STOP;
 		remote_running=0;
-		send_sms(52);
+		send_sms(RESULT_STOP);
 	}
 	if (sserial_request.command==8)
 	{
@@ -290,53 +300,8 @@ void process_command_control_engine()
 		sserial_response.datalength=1;
 		sserial_send_response();
 		number_minutes_work+=5;
-		send_sms(54);
+		send_sms(RESULT_ADD_TIME);
 	}
-}
-
-//Обратный отсчет времени после запуска по СМС
-void count_minutes_work()
-{
-	static int counter_ms=0;
-	static int counter_sec=0;
-
-	if (number_minutes_work>0)
-	{
-		counter_ms++;
-		//Если ключ вставлен, то питание идет через замок зажигания, обнуляем счетчик и переходим к выключению
-		if (sensor_ignition_key_is_pressed()==1)
-		{
-			number_minutes_work=0;
-			relay_ignition_set_state(0);
-			counter_ms=0;
-			counter_sec=0;
-		}
-		
-		//Считаем милисекунды
-		if (counter_ms>1000)
-		{
-			counter_sec++;
-			counter_ms=0;
-		}
-		//Считаем секунды
-		if (counter_sec>60)
-		{
-			number_minutes_work--;
-			counter_sec=0;
-		}
-
-	}
-	//Если время кончилось, переходим к остановке
-	else
-	{
-		relay_ignition_set_state(0);
-		counter_ms=0;
-		counter_sec=0;
-		current_state=ENGINE_STOP;
-		send_sms(52);
-		remote_running=0;
-	}
-	_delay_ms(1);
 }
 
 void process_running_engine()
@@ -347,7 +312,6 @@ void process_running_engine()
 	{
 		if (remote_running==1) 
 		{
-	
 			if (number_minutes_work>0)
 			{
 				counter_ms++;
@@ -367,21 +331,18 @@ void process_running_engine()
 			//Если время кончилось, переходим к остановке
 			else
 			{
-				relay_ignition_set_state(0);
-				current_state=ENGINE_STOP;
-				send_sms(52);
 				remote_running=0;
 			}
 			//Если ключ вставлен, то питание идет через замок зажигания, обнуляем счетчик и переходим к выключению
-			if (sensor_ignition_key_is_pressed()==1)
-			{
-				relay_ignition_set_state(0);
-				remote_running=0;
-			}
+			if (sensor_ignition_key_is_pressed()==1) remote_running=0;
+			
 			_delay_ms(1);	
 		}
 		else
-		{
+		{	
+			relay_ignition_set_state(0);
+			current_state=ENGINE_STOP;
+			send_sms(RESULT_STOP);			
 			counter_ms=0;
 			counter_sec=0;		
 		}
