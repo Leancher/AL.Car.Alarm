@@ -57,7 +57,7 @@ void sensor_ignition_key_enable()
 	setbit(PORTB,5,1);	
 }
 
-byte sensor_ignition_key_is_pressed()
+byte ignition_key_is_presence()
 {
 	if (getbit(PINB,5)==0) return 1;
 

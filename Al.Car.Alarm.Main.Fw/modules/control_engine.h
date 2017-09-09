@@ -15,6 +15,23 @@
 
 typedef unsigned char byte;
 
+typedef enum
+{
+	ENGINE_STOP=1,
+	IGNITION_INIT=2,
+	IGNITION_READY=3,
+	ENGINE_STARTING=4,
+	ENGINE_RUN=5,
+	ENGINE_STOPPING=6,
+	ENGINE_ALREADY_STARTED=7,
+	ADD_FIVE_MIN=8,
+} DEVICE_STATE;
+DEVICE_STATE current_state;
+
+//1 - если двигатель запущен с помощью СМС
+byte remote_running;
+int number_minutes_work;
+
 void send_sms(int number_command);
 void ignition_turn_on();
 void starter_control();

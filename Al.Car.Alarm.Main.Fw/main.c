@@ -1,12 +1,16 @@
 #include "board/board.h"
 
+
 void board_init()
 {
 	sensor_ignition_key_enable();
 	relay_ignition_set_state(0);
 	relay_starter_set_state(0);
 	board_button_enable();
-	board_led_set_state(1);
+	//board_led_set_state(1);
+	remote_running=0;
+	number_minutes_work=0;
+	current_state=ENGINE_STOP;
 	_delay_ms(3);
 	setbit(UCSR1B,RXCIE1,1);
 	sei();
@@ -39,6 +43,7 @@ int main(void)
 		wdt_reset();
 	 	//////get_state_start_button();
 		//////switch_led();
+
 		process_running_engine();
 		_delay_ms(1);
     }

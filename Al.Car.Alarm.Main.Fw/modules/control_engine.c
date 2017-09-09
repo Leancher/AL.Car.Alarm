@@ -3,23 +3,12 @@
 #include "../refs/bwl_strings.h"
 #include "../refs/bwl_adc.h"
 
-typedef enum
-{
-	ENGINE_STOP=1,
-	IGNITION_INIT=2,
-	IGNITION_READY=3,
-	ENGINE_STARTING=4,
-	ENGINE_RUN=5,
-	ENGINE_STOPPING=6,
-	ENGINE_ALREADY_STARTED=7,
-	ADD_FIVE_MIN=8,
-} DEVICE_STATE;
-DEVICE_STATE current_state = ENGINE_STOP;
+
 
 int voltage_battery=0;
-int number_minutes_work=0;
-//1 - если двигатель запущен с помощью СМС
-byte remote_running=0;
+int counter_ms=0;
+int counter_sec=0;
+int delay_relay_ignition_on=5;
 
 int get_voltage()
 {
@@ -306,20 +295,34 @@ void process_command_control_engine()
 
 void process_running_engine()
 {
-	static int counter_ms=0;
-	static int counter_sec=0;
 	if (current_state==ENGINE_RUN)
 	{
+		if (ignition_key_is_presence()==1)
+		{
+			board_led_set_state(1);
+			if (delay_relay_ignition_on>0)
+			{
+				counter_ms++;
+				//Считаем милисекунды
+				if (counter_ms>1000)
+				{
+					delay_relay_ignition_on--;
+					counter_ms=0;
+				}
+				return;					
+			}
+			delay_relay_ignition_on=5;
+			relay_ignition_set_state(0);
+			board_led_set_state(0);
+			remote_running=0;
+			current_state=ENGINE_STOP;
+			counter_ms=0;
+			counter_sec=0;
+		}
+
 		if (remote_running==1) 
 		{
-			//Если ключ вставлен, то питание идет через замок зажигания, переходим к выключению
-// 			if (sensor_ignition_key_is_pressed()==1)
-// 			{
-// 				//Оставляем 5 сек, чтобы успело включиться реле замка зажигания
-// 				number_minutes_work=1;
-// 				counter_sec=55;
-// 			}
-
+			board_led_set_state(1);
 			if (number_minutes_work>0)
 			{
 				counter_ms++;
@@ -336,15 +339,15 @@ void process_running_engine()
 					counter_sec=0;
 				}
 			}
-			//Если время кончилось, переходим к остановке
 			else
 			{
+				//Если время кончилось, переходим к остановке
 				remote_running=0;
 			}
-				
 		}
 		else
 		{	
+			board_led_set_state(0);
 			relay_ignition_set_state(0);
 			current_state=ENGINE_STOP;
 			send_sms(RESULT_STOP);			

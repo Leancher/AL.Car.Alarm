@@ -38,7 +38,7 @@ void relay_starter_set_state(byte state);
 void relay_starter_acc_state(byte state);
 
 void sensor_ignition_key_enable();
-byte sensor_ignition_key_is_pressed();
+byte ignition_key_is_presence();
 
 void board_button_enable();
 byte board_button_is_pressed();
