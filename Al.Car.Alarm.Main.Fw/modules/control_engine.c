@@ -297,9 +297,9 @@ void process_running_engine()
 {
 	if (current_state==ENGINE_RUN)
 	{
+		board_led_set_state(1);
 		if (ignition_key_is_presence()==1)
 		{
-			board_led_set_state(1);
 			if (delay_relay_ignition_on>0)
 			{
 				counter_ms++;
@@ -311,18 +311,10 @@ void process_running_engine()
 				}
 				return;					
 			}
-			delay_relay_ignition_on=5;
-			relay_ignition_set_state(0);
-			board_led_set_state(0);
-			remote_running=0;
-			current_state=ENGINE_STOP;
-			counter_ms=0;
-			counter_sec=0;
+			number_minutes_work=0;
 		}
-
 		if (remote_running==1) 
 		{
-			board_led_set_state(1);
 			if (number_minutes_work>0)
 			{
 				counter_ms++;
@@ -338,21 +330,16 @@ void process_running_engine()
 					number_minutes_work--;
 					counter_sec=0;
 				}
-			}
-			else
-			{
-				//≈сли врем€ кончилось, переходим к остановке
-				remote_running=0;
+				return;
 			}
 		}
-		else
-		{	
-			board_led_set_state(0);
-			relay_ignition_set_state(0);
-			current_state=ENGINE_STOP;
-			send_sms(RESULT_STOP);			
-			counter_ms=0;
-			counter_sec=0;		
-		}
+		board_led_set_state(0);
+		relay_ignition_set_state(0);
+		send_sms(RESULT_STOP);
+		delay_relay_ignition_on=5;
+		remote_running=0;
+		current_state=ENGINE_STOP;
+		counter_ms=0;
+		counter_sec=0;
 	}
 }
